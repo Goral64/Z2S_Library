@@ -184,7 +184,7 @@ index e89e9aae..88778146 100644
  void generateHttpAgent(char *buffer, int size);
  
 diff --git a/src/supla/protocol/supla_srpc.cpp b/src/supla/protocol/supla_srpc.cpp
-index 1695c86d..1f05cca8 100644
+index 1695c86d..50404ebb 100644
 --- a/src/supla/protocol/supla_srpc.cpp
 +++ b/src/supla/protocol/supla_srpc.cpp
 @@ -47,6 +47,15 @@ struct CalCfgResultPendingItem {
@@ -233,7 +233,20 @@ index 1695c86d..1f05cca8 100644
        SUPLA_LOG_ERROR(
            "Channel[%d]: is registered on server side, but missing on device",
            i);
-@@ -1170,6 +1179,9 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
+@@ -652,6 +661,12 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
+ 
+       for (auto element = Supla::Element::begin(); element != nullptr;
+            element = element->next()) {
++        // Elements of channels registered by another device are notified by
++        // the protocol layer that registers them.
++        auto channel = element->getChannel();
++        if (channel && channel->isExternallyRegistered()) {
++          continue;
++        }
+         element->onRegistered(this);
+         delay(0);
+       }
+@@ -1170,6 +1185,9 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
  
  void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
                                                          uint8_t channelNo) {
@@ -243,7 +256,7 @@ index 1695c86d..1f05cca8 100644
    TDSC_ChannelState state = {};
    state.ReceiverID = receiverId;
    state.ChannelNumber = channelNo;
-@@ -1213,7 +1225,7 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
+@@ -1213,7 +1231,7 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
  
  void Supla::Protocol::SuplaSrpc::sendActionTrigger(uint8_t channelNumber,
                                                     uint32_t actionId) {
@@ -252,7 +265,7 @@ index 1695c86d..1f05cca8 100644
      return;
    }
  
-@@ -1276,7 +1288,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+@@ -1276,7 +1294,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
      int8_t *value,
      uint8_t offline,
      uint32_t validityTimeSec) {
@@ -261,7 +274,7 @@ index 1695c86d..1f05cca8 100644
      return;
    }
    srpc_ds_async_channel_value_changed_c(srpc,
-@@ -1288,7 +1300,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+@@ -1288,7 +1306,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
  
  void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
      uint8_t channelNumber, TSuplaChannelExtendedValue *value) {
@@ -270,7 +283,7 @@ index 1695c86d..1f05cca8 100644
      return;
    }
    srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
-@@ -1296,7 +1308,7 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
+@@ -1296,7 +1314,7 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
  
  void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
                                                    uint8_t configType) {
@@ -279,7 +292,7 @@ index 1695c86d..1f05cca8 100644
      return;
    }
    TDS_GetChannelConfigRequest request = {};
-@@ -1310,7 +1322,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
+@@ -1310,7 +1328,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
                                                    void *channelConfig,
                                                    int size,
                                                    uint8_t configType) {
@@ -288,7 +301,7 @@ index 1695c86d..1f05cca8 100644
      return false;
    }
    if ((size != 0 && channelConfig == nullptr) ||
-@@ -1345,7 +1357,7 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
+@@ -1345,7 +1363,7 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
  
  bool Supla::Protocol::SuplaSrpc::setInitialCaption(uint8_t channelNumber,
                                                     const char *caption) {
@@ -297,7 +310,7 @@ index 1695c86d..1f05cca8 100644
      return false;
    }
    TDCS_SetCaption *request = new TDCS_SetCaption;
-@@ -1467,7 +1479,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
+@@ -1467,7 +1485,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
                                                          uint32_t timeMs,
                                                          uint8_t state,
                                                          int32_t senderId) {
@@ -306,7 +319,7 @@ index 1695c86d..1f05cca8 100644
      SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not registered");
      return;
    }
-@@ -1497,7 +1509,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
+@@ -1497,7 +1515,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
      unsigned char state[SUPLA_CHANNELVALUE_SIZE],
      int32_t senderId,
      bool useSecondsInsteadOfMs) {

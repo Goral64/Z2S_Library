@@ -20,6 +20,17 @@ namespace {
 constexpr uint32_t kConnectIntervalMs = 250;
 constexpr uint8_t kNoDevice = 0xFF;
 
+bool isHvacFunction(int32_t function) {
+  switch (function) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
+      return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 Z2S_MultiDeviceLayer::Z2S_MultiDeviceLayer(SuplaDeviceClass *sdc,
@@ -143,6 +154,59 @@ bool Z2S_MultiDeviceLayer::removeDevice(uint32_t tag) {
   devices_.erase(devices_.begin() + index);
   rebuildChannelMap();
   return true;
+}
+
+void Z2S_MultiDeviceLayer::translateConfigChannels(const Device &device,
+                                                   int self_local,
+                                                   int32_t function,
+                                                   uint8_t config_type,
+                                                   void *config, int size,
+                                                   bool to_local) {
+  // Channel numbers inside a config: the device's own channels are
+  // translated; a channel outside the device cannot be referred to, so it
+  // becomes "not set" (for HVAC: the channel itself).
+  auto translate = [&](unsigned char *number) {
+    if (to_local) {
+      for (size_t i = 0; i < device.channels.size(); i++) {
+        if (device.channels[i] == *number) {
+          *number = static_cast<unsigned char>(i);
+          return true;
+        }
+      }
+      *number = static_cast<unsigned char>(self_local);
+      return false;
+    }
+    bool valid = *number < device.channels.size();
+    *number = device.channels[valid ? *number : self_local];
+    return valid;
+  };
+  auto translateOptional = [&](unsigned char *is_set, unsigned char *number) {
+    if (*is_set && !translate(number)) *is_set = 0;
+  };
+
+  if (size == sizeof(TChannelConfig_PowerSwitch) &&
+      (((function == SUPLA_CHANNELFNC_POWERSWITCH ||
+         function == SUPLA_CHANNELFNC_LIGHTSWITCH) &&
+        config_type == SUPLA_CONFIG_TYPE_DEFAULT) ||
+       (function == SUPLA_CHANNELFNC_STAIRCASETIMER &&
+        config_type == SUPLA_CONFIG_TYPE_EXTENDED))) {
+    auto c = static_cast<TChannelConfig_PowerSwitch *>(config);
+    translateOptional(&c->DefaultRelatedMeterIsSet,
+                      &c->DefaultRelatedMeterChannelNo);
+    if (!c->DefaultRelatedMeterIsSet) c->DefaultRelatedMeterChannelNo = 0;
+  } else if (size == sizeof(TChannelConfig_HVAC) &&
+             config_type == SUPLA_CONFIG_TYPE_DEFAULT &&
+             isHvacFunction(function)) {
+    auto c = static_cast<TChannelConfig_HVAC *>(config);
+    translate(&c->MainThermometerChannelNo);
+    translate(&c->AuxThermometerChannelNo);
+    translate(&c->BinarySensorChannelNo);
+    translateOptional(&c->MasterThermostatIsSet,
+                      &c->MasterThermostatChannelNo);
+    translateOptional(&c->HeatOrColdSourceSwitchIsSet,
+                      &c->HeatOrColdSourceSwitchChannelNo);
+    translateOptional(&c->PumpSwitchIsSet, &c->PumpSwitchChannelNo);
+  }
 }
 
 void Z2S_MultiDeviceLayer::onInit() {
@@ -319,8 +383,15 @@ bool Z2S_MultiDeviceLayer::setChannelConfig(uint8_t channelNumber,
                                             uint8_t configType) {
   int local;
   auto session = findChannel(channelNumber, &local);
-  if (session == nullptr) return false;
-  return session->setChannelConfig(local, channelFunction, channelConfig, size,
+  if (session == nullptr || size < 0 || size > SUPLA_CHANNEL_CONFIG_MAXSIZE) {
+    return false;
+  }
+  // The element's own config is left untouched.
+  char config[SUPLA_CHANNEL_CONFIG_MAXSIZE];
+  memcpy(config, channelConfig, size);
+  translateConfigChannels(devices_[device_of_channel_[channelNumber]], local,
+                          channelFunction, configType, config, size, true);
+  return session->setChannelConfig(local, channelFunction, config, size,
                                    configType);
 }
 
@@ -362,9 +433,17 @@ void Z2S_MultiDeviceLayer::onSessionRegistered(
     Z2S_MultiDeviceSession *session) {
   // Like after the gateway's registration: values, captions, configs and
   // channel states are sent again by the elements (Element::iterateConnected).
+  // Element::onRegistered() also restarts the element's channel config
+  // exchange; without a SuplaSrpc it does not touch the channels, so they are
+  // marked here.
   for (auto &device : devices_) {
     if (device.session.get() != session) continue;
+    Supla::Element *last_element = nullptr;
     for (uint8_t channel_number : device.channels) {
+      auto element = Supla::Element::getElementByChannelNumber(channel_number);
+      // A secondary channel follows the primary one of the same element.
+      if (element && element != last_element) element->onRegistered(nullptr);
+      last_element = element;
       auto channel = Supla::Channel::GetByChannelNumber(channel_number);
       if (channel) channel->onRegistered();
     }
@@ -413,8 +492,15 @@ int Z2S_MultiDeviceLayer::onCalCfgRequest(Z2S_MultiDeviceSession *session,
 uint8_t Z2S_MultiDeviceLayer::dispatchChannelConfig(TSD_ChannelConfig *config,
                                                     int channel_number) {
   auto element = Supla::Element::getElementByChannelNumber(channel_number);
-  if (element == nullptr) return SUPLA_RESULTCODE_CHANNELNOTFOUND;
   int local = config->ChannelNumber;
+  int device_local;
+  if (element == nullptr || findChannel(channel_number, &device_local) ==
+                                nullptr) {
+    return SUPLA_RESULTCODE_CHANNELNOTFOUND;
+  }
+  translateConfigChannels(devices_[device_of_channel_[channel_number]], local,
+                          config->Func, config->ConfigType, config->Config,
+                          config->ConfigSize, false);
   config->ChannelNumber = static_cast<unsigned char>(channel_number);
   uint8_t result;
   switch (config->ConfigType) {

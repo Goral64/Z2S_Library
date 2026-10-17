@@ -108,6 +108,9 @@ class Z2S_MultiDeviceLayer : public Supla::Protocol::ProtocolLayer,
   int globalChannel(Z2S_MultiDeviceSession *session, int local);
   void fillStateData(int channel_number, TDSC_ChannelState *state);
   uint8_t dispatchChannelConfig(TSD_ChannelConfig *config, int channel_number);
+  void translateConfigChannels(const Device &device, int self_local,
+                               int32_t function, uint8_t config_type,
+                               void *config, int size, bool to_local);
 
   const char *supla_ca_cert_;
   const char *supla_3rd_party_ca_cert_;
