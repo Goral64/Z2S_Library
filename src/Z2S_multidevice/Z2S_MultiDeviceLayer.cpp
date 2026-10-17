@@ -78,9 +78,14 @@ void Z2S_MultiDeviceLayer::onInit() {
   // The gateway's protocol layer has already loaded the config.
   config_.server = Supla::RegisterDevice::getServerName();
   config_.email = Supla::RegisterDevice::getEmail();
+  // The gateway's version looks like "Z2S-1.6.87-13/10/26"; only the
+  // version number fits next to the prefix (SUPLA_SOFTVER_MAXSIZE).
+  const char *version = Supla::RegisterDevice::getSoftVer();
+  if (strncmp(version, "Z2S-", 4) == 0) version += 4;
+  int version_len = static_cast<int>(strcspn(version, "-"));
   char soft_ver[SUPLA_SOFTVER_MAXSIZE];
-  snprintf(soft_ver, sizeof(soft_ver), "Z2S_Library %s",
-           Supla::RegisterDevice::getSoftVer());
+  snprintf(soft_ver, sizeof(soft_ver), "Z2S_Library %.*s", version_len,
+           version);
   config_.soft_ver = soft_ver;
 
   auto cfg = Supla::Storage::ConfigInstance();
