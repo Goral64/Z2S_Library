@@ -1,0 +1,317 @@
+Channels registered in Supla by another device (multidevice mode).
+Base: lsroka76/supla-device d470d462a7bd84675ebb95601a78151f9a053b5d
+
+diff --git a/src/supla/channels/channel.cpp b/src/supla/channels/channel.cpp
+index 2b932a34..c39d12b0 100644
+--- a/src/supla/channels/channel.cpp
++++ b/src/supla/channels/channel.cpp
+@@ -82,7 +82,9 @@ Channel::Channel(int number) {
+ }
+ 
+ Channel::~Channel() {
+-  Supla::RegisterDevice::removeChannel(channelNumber);
++  if (!externallyRegistered) {
++    Supla::RegisterDevice::removeChannel(channelNumber);
++  }
+   if (initialCaption != nullptr) {
+     delete[] initialCaption;
+     initialCaption = nullptr;
+@@ -1766,6 +1768,22 @@ void Channel::setSubDeviceId(uint8_t subDeviceId) {
+   this->subDeviceId = subDeviceId;
+ }
+ 
++void Channel::setExternallyRegistered(bool value) {
++  if (externallyRegistered == value) {
++    return;
++  }
++  externallyRegistered = value;
++  if (value) {
++    Supla::RegisterDevice::removeChannel(channelNumber);
++  } else {
++    Supla::RegisterDevice::addChannel(channelNumber);
++  }
++}
++
++bool Channel::isExternallyRegistered() const {
++  return externallyRegistered;
++}
++
+ uint8_t Channel::getSubDeviceId() const {
+   return subDeviceId;
+ }
+diff --git a/src/supla/channels/channel.h b/src/supla/channels/channel.h
+index 8ac45ce2..d4f47e89 100644
+--- a/src/supla/channels/channel.h
++++ b/src/supla/channels/channel.h
+@@ -351,6 +351,18 @@ class Channel : public LocalAction {
+   void setSubDeviceId(uint8_t subDeviceId);
+   uint8_t getSubDeviceId() const;
+ 
++  /**
++   * Marks the channel as registered in Supla by another device (e.g. a
++   * gateway that registers some of its channels as separate devices).
++   * Such channel keeps its number, but it is not part of this device's
++   * registration and SuplaSrpc doesn't send anything about it. Other
++   * protocol layers still get all updates.
++   *
++   * @param value true when the channel is registered elsewhere
++   */
++  void setExternallyRegistered(bool value);
++  bool isExternallyRegistered() const;
++
+   bool isRollerShutterRelayType() const;
+   void setRelayOvercurrentCutOff(bool value);
+   bool isRelayOvercurrentCutOff() const;
+@@ -405,6 +417,7 @@ class Channel : public LocalAction {
+   uint8_t state = 0;
+   uint8_t defaultIcon = 0;
+   uint8_t subDeviceId = 0;
++  bool externallyRegistered = false;
+ 
+   union {
+     int8_t value[SUPLA_CHANNELVALUE_SIZE] = {};
+diff --git a/src/supla/device/register_device.cpp b/src/supla/device/register_device.cpp
+index 5ec950e4..a27dc0d5 100644
+--- a/src/supla/device/register_device.cpp
++++ b/src/supla/device/register_device.cpp
+@@ -73,12 +73,7 @@ int Supla::RegisterDevice::getChannelNumber(int index) {
+     return -1;
+   }
+ 
+-  int currentIndex = 0;
+-  Supla::Channel *ch = Supla::Channel::Begin();
+-  for (; ch != nullptr && currentIndex < index; ch = ch->next()) {
+-    currentIndex++;
+-  }
+-
++  Supla::Channel *ch = getRegisteredChannel(index);
+   if (ch == nullptr) {
+     return -1;
+   }
+@@ -106,6 +101,42 @@ uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
+ 
+ #endif
+ 
++int Supla::RegisterDevice::getMaxChannelNumberRegistered() {
++  int max = -1;
++  for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
++      ch = ch->next()) {
++    if (!ch->isExternallyRegistered() && ch->getChannelNumber() > max) {
++      max = ch->getChannelNumber();
++    }
++  }
++
++  return max;
++}
++
++bool Supla::RegisterDevice::isChannelNumberRegistered(int channelNumber) {
++  auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
++  return ch != nullptr && !ch->isExternallyRegistered();
++}
++
++Supla::Channel *Supla::RegisterDevice::getRegisteredChannel(int index) {
++  if (index < 0) {
++    return nullptr;
++  }
++  int currentIndex = 0;
++  for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
++       ch = ch->next()) {
++    if (ch->isExternallyRegistered()) {
++      continue;
++    }
++    if (currentIndex == index) {
++      return ch;
++    }
++    currentIndex++;
++  }
++
++  return nullptr;
++}
++
+ int Supla::RegisterDevice::getMaxChannelNumberUsed() {
+   int max = -1;
+   for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
+@@ -127,9 +158,9 @@ TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
+     return nullptr;
+   }
+ 
+-  auto channel = Supla::Channel::Begin();
+-  for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
+-    channel = channel->next();
++  auto channel = getRegisteredChannel(index);
++  if (channel == nullptr) {
++    return nullptr;
+   }
+ 
+   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_D);
+@@ -142,9 +173,9 @@ TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
+     return nullptr;
+   }
+ 
+-  auto channel = Supla::Channel::Begin();
+-  for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
+-    channel = channel->next();
++  auto channel = getRegisteredChannel(index);
++  if (channel == nullptr) {
++    return nullptr;
+   }
+ 
+   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_E);
+diff --git a/src/supla/device/register_device.h b/src/supla/device/register_device.h
+index e89e9aae..88778146 100644
+--- a/src/supla/device/register_device.h
++++ b/src/supla/device/register_device.h
+@@ -24,6 +24,8 @@
+ #include <stdint.h>
+ 
+ namespace Supla {
++class Channel;
++
+ namespace RegisterDevice {
+ 
+ TDS_SuplaRegisterDeviceHeader *getRegDevHeaderPtr();
+@@ -81,6 +83,12 @@ void addChannel(int channelNumber);
+ void removeChannel(int channelNumber);
+ int getChannelCount();
+ int getMaxChannelNumberUsed();
++// Variants which skip channels registered by another device (see
++// Channel::setExternallyRegistered).
++int getMaxChannelNumberRegistered();
++bool isChannelNumberRegistered(int channelNumber);
++// Returns index-th channel registered by this device, nullptr if not found.
++Supla::Channel *getRegisteredChannel(int index);
+ 
+ void generateHttpAgent(char *buffer, int size);
+ 
+diff --git a/src/supla/protocol/supla_srpc.cpp b/src/supla/protocol/supla_srpc.cpp
+index 1695c86d..1f05cca8 100644
+--- a/src/supla/protocol/supla_srpc.cpp
++++ b/src/supla/protocol/supla_srpc.cpp
+@@ -47,6 +47,15 @@ struct CalCfgResultPendingItem {
+ 
+ bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
+ 
++namespace {
++// Channels registered in Supla by another device are skipped by SuplaSrpc
++// (see Channel::setExternallyRegistered).
++bool isExternalChannel(int channelNumber) {
++  auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
++  return ch != nullptr && ch->isExternallyRegistered();
++}
++}  // namespace
++
+ static const char wrongCert[] = "SUPLA";
+ 
+ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
+@@ -573,17 +582,17 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
+   bool hasConflictChannelMissingOnServer = false;
+   bool hasConflictChannelMissingOnDevice = false;
+   if (registerDeviceResultB->channel_report_size <
+-      Supla::RegisterDevice::getMaxChannelNumberUsed() + 1) {
++      Supla::RegisterDevice::getMaxChannelNumberRegistered() + 1) {
+     SUPLA_LOG_WARNING(
+         "RegisterResultB: conflict server report has %d entries, device has "
+         "channel with max number %d",
+         registerDeviceResultB->channel_report_size,
+-        Supla::RegisterDevice::getMaxChannelNumberUsed());
++        Supla::RegisterDevice::getMaxChannelNumberRegistered());
+     hasConflictChannelMissingOnServer = true;
+   }
+   for (int i = 0; i < registerDeviceResultB->channel_report_size; i++) {
+     if (registerDeviceResultB->channel_report[i] == 0 &&
+-        !Supla::RegisterDevice::isChannelNumberFree(i)) {
++        Supla::RegisterDevice::isChannelNumberRegistered(i)) {
+       SUPLA_LOG_WARNING(
+           "Channel[%d]: is present on device, but missing on server side", i);
+       hasConflictChannelMissingOnServer = true;
+@@ -592,7 +601,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
+ 
+     if ((registerDeviceResultB->channel_report[i] &
+          CHANNEL_REPORT_CHANNEL_REGISTERED) &&
+-        Supla::RegisterDevice::isChannelNumberFree(i)) {
++        !Supla::RegisterDevice::isChannelNumberRegistered(i)) {
+       SUPLA_LOG_ERROR(
+           "Channel[%d]: is registered on server side, but missing on device",
+           i);
+@@ -1170,6 +1179,9 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
+ 
+ void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
+                                                         uint8_t channelNo) {
++  if (isExternalChannel(channelNo)) {
++    return;
++  }
+   TDSC_ChannelState state = {};
+   state.ReceiverID = receiverId;
+   state.ChannelNumber = channelNo;
+@@ -1213,7 +1225,7 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
+ 
+ void Supla::Protocol::SuplaSrpc::sendActionTrigger(uint8_t channelNumber,
+                                                    uint32_t actionId) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return;
+   }
+ 
+@@ -1276,7 +1288,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+     int8_t *value,
+     uint8_t offline,
+     uint32_t validityTimeSec) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return;
+   }
+   srpc_ds_async_channel_value_changed_c(srpc,
+@@ -1288,7 +1300,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+ 
+ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
+     uint8_t channelNumber, TSuplaChannelExtendedValue *value) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return;
+   }
+   srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
+@@ -1296,7 +1308,7 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
+ 
+ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
+                                                   uint8_t configType) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return;
+   }
+   TDS_GetChannelConfigRequest request = {};
+@@ -1310,7 +1322,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
+                                                   void *channelConfig,
+                                                   int size,
+                                                   uint8_t configType) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return false;
+   }
+   if ((size != 0 && channelConfig == nullptr) ||
+@@ -1345,7 +1357,7 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
+ 
+ bool Supla::Protocol::SuplaSrpc::setInitialCaption(uint8_t channelNumber,
+                                                    const char *caption) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     return false;
+   }
+   TDCS_SetCaption *request = new TDCS_SetCaption;
+@@ -1467,7 +1479,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
+                                                         uint32_t timeMs,
+                                                         uint8_t state,
+                                                         int32_t senderId) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not registered");
+     return;
+   }
+@@ -1497,7 +1509,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
+     unsigned char state[SUPLA_CHANNELVALUE_SIZE],
+     int32_t senderId,
+     bool useSecondsInsteadOfMs) {
+-  if (!isRegisteredAndReady()) {
++  if (!isRegisteredAndReady() || isExternalChannel(channelNumber)) {
+     SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not send - not registered");
+     return;
+   }
