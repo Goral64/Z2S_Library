@@ -1,4 +1,5 @@
 #include "z2s_telnet_parser.h"
+#include "z2s_multidevice.h"
 
 
 void printDir(fs::FS &fs, const char *dirname, uint8_t levels) {
@@ -520,6 +521,11 @@ void Z2S_onTelnetCmd(char *cmd, uint8_t params_number, char **param) {
     else
       telnet.printf("\n\rInvalid TX power value for SET-ZIGBEE-TX-POWER: "
                     "%d (should be between -24 and +20)\n\r>", zb_tx_power);
+    return;
+  } else
+  if (strcmp(cmd, "MULTIDEVICE") == 0) {
+
+    Z2S_onMultiDeviceTelnetCmd(params_number, param);
     return;
   } else
   if (strcmp(cmd, "VERSION") == 0) {

@@ -107,6 +107,8 @@ class Z2S_MultiDeviceSession {
   bool setChannelConfig(int channel_number, int32_t function,
                         const void *config, int size, uint8_t config_type);
   bool getChannelConfig(int channel_number, uint8_t config_type);
+  // Channel state sent without a request (ReceiverID 0), e.g. battery.
+  bool sendChannelState(TDSC_ChannelState *state);
 
   // Connection lifecycle, driven by the owner.
   bool wantsToConnect(uint32_t now_ms) const;

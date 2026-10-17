@@ -11945,14 +11945,15 @@ bool ZbConflictResolver::onChannelConflictReport(
       "ConflictResolver: Channel conflict - channel missing "
       "on server. Trying to remove affected devices...");
 
-    auto maxChannelNumber = Supla::RegisterDevice::getMaxChannelNumberUsed();
+    auto maxChannelNumber = 
+      Supla::RegisterDevice::getMaxChannelNumberRegistered();
 
     uint8_t zb_device_slot = 0xFF;
 
     for (int i = 0; i <= maxChannelNumber; i++) {
 
       if ((i >= channelReportSize || channelReport[i] == 0) &&
-          !Supla::RegisterDevice::isChannelNumberFree(i)) {
+          Supla::RegisterDevice::isChannelNumberRegistered(i)) {
        
         log_i("%u, %u, %u", channelReportSize, i, channelReport[i]);
         

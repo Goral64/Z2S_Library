@@ -63,6 +63,7 @@
 #include "z2s_little_fs.h"
 #include "z2s_device_tuya_custom_cluster.h"
 #include "task_info.h"
+#include "z2s_multidevice.h"
 
 #ifdef USE_TELNET_CONSOLE
 
@@ -978,6 +979,8 @@ void setup() {
       Z2S_GUI_ON_START_DELAY_V2, " GUI START DELAY (S)", 30);
 
   }
+
+  Z2S_initMultiDevice(suplaCACert, supla3rdCACert);
 
   SuplaDevice.begin(28);      
   

@@ -226,6 +226,12 @@ bool Z2S_MultiDeviceSession::getChannelConfig(int channel_number,
   return true;
 }
 
+bool Z2S_MultiDeviceSession::sendChannelState(TDSC_ChannelState *state) {
+  if (!isRegistered() || !isValidChannel(state->ChannelNumber)) return false;
+  srpc_csd_async_channel_state_result(srpc_, state);
+  return true;
+}
+
 bool Z2S_MultiDeviceSession::wantsToConnect(uint32_t now_ms) const {
   return state_ == State::Idle && !suspended_ && !channels_.empty() &&
          (!reconnect_scheduled_ || timeReached(now_ms, next_connect_ms_));

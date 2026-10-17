@@ -332,6 +332,23 @@ TEST_F(SessionTest, ChannelStateIsFilledByListener) {
   EXPECT_EQ(+conn().channel_states[0].state.BatteryLevel, 77);
 }
 
+TEST_F(SessionTest, SendsChannelStateWithoutRequest) {
+  TDSC_ChannelState state = {};
+  state.ChannelNumber = 1;
+  state.Fields = SUPLA_CHANNELSTATE_FIELD_BATTERYLEVEL;
+  state.BatteryLevel = 40;
+  EXPECT_FALSE(session_.sendChannelState(&state));
+  run(5);
+  EXPECT_TRUE(session_.sendChannelState(&state));
+  state.ChannelNumber = 2;
+  EXPECT_FALSE(session_.sendChannelState(&state));
+  run(3);
+  ASSERT_EQ(conn().channel_states.size(), 1u);
+  EXPECT_EQ(conn().channel_states[0].channel, 1);
+  EXPECT_EQ(conn().channel_states[0].receiver_id, 0);
+  EXPECT_EQ(+conn().channel_states[0].state.BatteryLevel, 40);
+}
+
 TEST_F(SessionTest, CalCfgGoesToListener) {
   run(5);
   server_.sendCalCfg(&conn(), 0, 5, SUPLA_CALCFG_CMD_IDENTIFY_DEVICE);
