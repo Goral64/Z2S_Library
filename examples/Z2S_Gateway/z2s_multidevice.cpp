@@ -149,21 +149,28 @@ static bool Z2S_applyMultiDeviceMode(
     return gateway_changed;
   }
 
+  // Removing the session gives the channels back to the gateway, so their
+  // state is compared with the one before.
+  std::vector<bool> was_external;
+
+  for (uint8_t channel_number : channels)
+    was_external.push_back(
+      Supla::Channel::GetByChannelNumber(channel_number)->
+        isExternallyRegistered());
+
   if (multiDeviceLayer)
     multiDeviceLayer->removeDevice(device_number_slot);
 
   // Pending: the channels are registered nowhere until the user decides.
   bool external = identity.mode == Z2S_MD_MODE_PENDING;
 
-  for (uint8_t channel_number : channels) {
+  for (size_t i = 0; i < channels.size(); i++) {
 
-    auto channel = Supla::Channel::GetByChannelNumber(channel_number);
-
-    if (channel->isExternallyRegistered() != external) {
-
-      channel->setExternallyRegistered(external);
+    Supla::Channel::GetByChannelNumber(channels[i])->setExternallyRegistered(
+      external);
+    
+    if (was_external[i] != external)
       gateway_changed = true;
-    }
   }
   return gateway_changed;
 }
