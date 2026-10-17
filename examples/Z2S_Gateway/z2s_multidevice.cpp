@@ -3,6 +3,9 @@
 #include <SuplaDevice.h>
 #include <supla/element.h>
 #include <supla/channels/channel.h>
+#include <supla/protocol/protocol_layer.h>
+#include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 
 #include <Z2S_multidevice/Z2S_MultiDeviceIdentity.h>
 #include <Z2S_multidevice/Z2S_MultiDeviceLayer.h>
@@ -13,10 +16,46 @@
 #include "z2s_devices_table.h"
 #include "z2s_telnet_server.h"
 
+// Where channels of newly paired Zigbee devices go (z2s_md_mode_t, pending =
+// ask the user).
+const static char Z2S_MULTIDEVICE_NEW_MODE[] PROGMEM = "z2s_md_new";
+
 static Z2S_MultiDeviceLayer *multiDeviceLayer = nullptr;
 
-// Zigbee device slot of each session of multiDeviceLayer.
-static std::vector<uint8_t> multiDeviceSlots;
+static const char *multiDeviceCACert = nullptr;
+static const char *multiDevice3rdPartyCACert = nullptr;
+
+// SuplaDevice.begin() was called: a layer created now has to be initialized
+// by hand.
+static bool multiDeviceStarted = false;
+
+/*****************************************************************************/
+
+static Z2S_MultiDeviceLayer *Z2S_getMultiDeviceLayer() {
+
+  if (multiDeviceLayer == nullptr) {
+
+    multiDeviceLayer = new Z2S_MultiDeviceLayer(
+      &SuplaDevice, multiDeviceCACert, multiDevice3rdPartyCACert);
+
+    if (multiDeviceStarted)
+      multiDeviceLayer->onInit();
+  }
+  return multiDeviceLayer;
+}
+
+/*****************************************************************************/
+
+// The gateway registers again with its current channel list.
+static void Z2S_restartGatewaySession() {
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+
+    if (proto != multiDeviceLayer)
+      proto->disconnect();
+  }
+}
 
 /*****************************************************************************/
 
@@ -62,8 +101,80 @@ static std::vector<uint8_t> Z2S_getMultiDeviceChannels(
 
 /*****************************************************************************/
 
+static uint8_t Z2S_getMultiDeviceNewMode() {
+
+  uint8_t new_mode = Z2S_MD_MODE_GATEWAY;
+
+  if (Supla::Storage::ConfigInstance())
+    Supla::Storage::ConfigInstance()->getUInt8(
+      Z2S_MULTIDEVICE_NEW_MODE, &new_mode);
+
+  return new_mode <= Z2S_MD_MODE_PENDING ? new_mode : Z2S_MD_MODE_GATEWAY;
+}
+
+/*****************************************************************************/
+
+// Puts channels of a Zigbee device where its mode says. Returns true when the
+// gateway's own channel list changed.
+static bool Z2S_applyMultiDeviceMode(
+  uint8_t device_number_slot, const z2s_md_identity_t &identity) {
+
+  auto channels = Z2S_getMultiDeviceChannels(device_number_slot);
+  bool gateway_changed = false;
+
+  if ((identity.mode == Z2S_MD_MODE_SEPARATE) && (!channels.empty())) {
+
+    auto layer = Z2S_getMultiDeviceLayer();
+
+    for (uint8_t channel_number : channels) {
+
+      auto channel = Supla::Channel::GetByChannelNumber(channel_number);
+      if (!channel->isExternallyRegistered())
+        gateway_changed = true;
+    }
+
+    if (layer->findDevice(device_number_slot) >= 0) {
+
+      layer->setDeviceChannels(
+        device_number_slot, channels.data(), channels.size());
+    } else {
+
+      char name[SUPLA_DEVICE_NAME_MAXSIZE];
+      Z2S_getMultiDeviceName(device_number_slot, name, sizeof(name));
+
+      layer->addDevice(
+        device_number_slot, identity.guid, identity.auth_key, name,
+        channels.data(), channels.size());
+    }
+    return gateway_changed;
+  }
+
+  if (multiDeviceLayer)
+    multiDeviceLayer->removeDevice(device_number_slot);
+
+  // Pending: the channels are registered nowhere until the user decides.
+  bool external = identity.mode == Z2S_MD_MODE_PENDING;
+
+  for (uint8_t channel_number : channels) {
+
+    auto channel = Supla::Channel::GetByChannelNumber(channel_number);
+
+    if (channel->isExternallyRegistered() != external) {
+
+      channel->setExternallyRegistered(external);
+      gateway_changed = true;
+    }
+  }
+  return gateway_changed;
+}
+
+/*****************************************************************************/
+
 void Z2S_initMultiDevice(
   const char *supla_ca_cert, const char *supla_3rd_party_ca_cert) {
+
+  multiDeviceCACert = supla_ca_cert;
+  multiDevice3rdPartyCACert = supla_3rd_party_ca_cert;
 
   for (uint8_t devices_counter = 0;
        devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
@@ -71,33 +182,66 @@ void Z2S_initMultiDevice(
     if (z2s_zb_devices_table[devices_counter].record_id == 0)
       continue;
 
+    auto ieee_addr = z2s_zb_devices_table[devices_counter].ieee_addr;
+
     z2s_md_identity_t identity;
 
-    if ((Z2S_loadMultiDeviceIdentity(
-           z2s_zb_devices_table[devices_counter].ieee_addr, &identity) !=
-         Z2S_MultiDeviceIdentityResult::Loaded) || (!identity.enabled))
-      continue;
+    switch (Z2S_loadMultiDeviceIdentity(ieee_addr, &identity)) {
 
-    auto channels = Z2S_getMultiDeviceChannels(devices_counter);
+      case Z2S_MultiDeviceIdentityResult::Loaded:
+        Z2S_applyMultiDeviceMode(devices_counter, identity);
+        break;
 
-    if (channels.empty()) {
+      case Z2S_MultiDeviceIdentityResult::Missing:
+        // A device paired before: its channels stay with the gateway. With
+        // the file, a missing one later means a newly paired device.
+        Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
+        identity.mode = Z2S_MD_MODE_GATEWAY;
+        Z2S_saveMultiDeviceIdentity(&identity);
+        break;
 
-      log_i("Multidevice: device #%u has no channels", devices_counter);
-      continue;
+      default:
+        break;
     }
-
-    if (multiDeviceLayer == nullptr)
-      multiDeviceLayer = new Z2S_MultiDeviceLayer(
-        &SuplaDevice, supla_ca_cert, supla_3rd_party_ca_cert);
-
-    char name[SUPLA_DEVICE_NAME_MAXSIZE];
-    Z2S_getMultiDeviceName(devices_counter, name, sizeof(name));
-
-    if (multiDeviceLayer->addDevice(
-          identity.guid, identity.auth_key, name, channels.data(),
-          channels.size()))
-      multiDeviceSlots.push_back(devices_counter);
   }
+  multiDeviceStarted = true;
+}
+
+/*****************************************************************************/
+
+void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot) {
+
+  if ((device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER) ||
+      (z2s_zb_devices_table[device_number_slot].record_id == 0))
+    return;
+
+  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+
+  z2s_md_identity_t identity;
+
+  switch (Z2S_loadMultiDeviceIdentity(ieee_addr, &identity)) {
+
+    case Z2S_MultiDeviceIdentityResult::Loaded:
+      break;
+
+    case Z2S_MultiDeviceIdentityResult::Missing:
+      Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
+      identity.mode = Z2S_getMultiDeviceNewMode();
+
+      if (!Z2S_saveMultiDeviceIdentity(&identity))
+        return;
+
+      log_i(
+        "Multidevice: new device #%u, mode %u", device_number_slot,
+        identity.mode);
+      break;
+
+    default:
+      return;
+  }
+  // Also on devices already paired: new channels go where the old ones are.
+  if (Z2S_applyMultiDeviceMode(device_number_slot, identity))
+    Z2S_restartGatewaySession();
 }
 
 /*****************************************************************************/
@@ -119,10 +263,26 @@ static const char *Z2S_getMultiDeviceStateName(
 
 /*****************************************************************************/
 
+static const char *Z2S_getMultiDeviceModeName(uint8_t mode) {
+
+  switch (mode) {
+
+    case Z2S_MD_MODE_SEPARATE: return "separate device";
+    case Z2S_MD_MODE_PENDING: return "waiting for choice";
+    default: return "gateway channels";
+  }
+}
+
+/*****************************************************************************/
+
 static void Z2S_printMultiDevices() {
 
-  telnet.printf("\n\r>Multidevice server: %s\n\r",
-                multiDeviceLayer ? multiDeviceLayer->serverName() : "-");
+  static const char *new_mode_names[] = { "GATEWAY", "SEPARATE", "ASK" };
+
+  telnet.printf(
+    "\n\r>Multidevice server: %s, new devices: %s\n\r",
+    multiDeviceLayer ? multiDeviceLayer->serverName() : "-",
+    new_mode_names[Z2S_getMultiDeviceNewMode()]);
 
   for (uint8_t devices_counter = 0;
        devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
@@ -144,7 +304,7 @@ static void Z2S_printMultiDevices() {
               z2s_zb_devices_table[devices_counter].ieee_addr, &identity)) {
 
       case Z2S_MultiDeviceIdentityResult::Loaded:
-        if (identity.enabled) mode = "separate device";
+        mode = Z2S_getMultiDeviceModeName(identity.mode);
         break;
       case Z2S_MultiDeviceIdentityResult::Damaged:
         mode = "identity file damaged";
@@ -156,12 +316,12 @@ static void Z2S_printMultiDevices() {
     telnet.printf(
       ">#%02u %s %s: %s", devices_counter, ieee_addr_str, name, mode);
 
-    for (size_t i = 0; i < multiDeviceSlots.size(); i++) {
+    int device_index = multiDeviceLayer ?
+      multiDeviceLayer->findDevice(devices_counter) : -1;
 
-      if (multiDeviceSlots[i] != devices_counter)
-        continue;
+    if (device_index >= 0) {
 
-      auto session = multiDeviceLayer->session(i);
+      auto session = multiDeviceLayer->session(device_index);
 
       telnet.printf(
         ", %s, %u channel(s), last result %d",
@@ -175,6 +335,33 @@ static void Z2S_printMultiDevices() {
 
 /*****************************************************************************/
 
+static void Z2S_setMultiDeviceNewMode(char *mode_name) {
+
+  uint8_t new_mode;
+
+  if (strcasecmp(mode_name, "GATEWAY") == 0)
+    new_mode = Z2S_MD_MODE_GATEWAY;
+  else
+  if (strcasecmp(mode_name, "SEPARATE") == 0)
+    new_mode = Z2S_MD_MODE_SEPARATE;
+  else
+  if (strcasecmp(mode_name, "ASK") == 0)
+    new_mode = Z2S_MD_MODE_PENDING;
+  else {
+
+    telnet.printf("\n\r>MULTIDEVICE NEW GATEWAY|SEPARATE|ASK\n\r>");
+    return;
+  }
+
+  if (Supla::Storage::ConfigInstance()->setUInt8(
+        Z2S_MULTIDEVICE_NEW_MODE, new_mode))
+    Supla::Storage::ConfigInstance()->commit();
+
+  telnet.printf("\n\r>New devices: %s\n\r>", mode_name);
+}
+
+/*****************************************************************************/
+
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
 
   if (params_number == 0) {
@@ -183,13 +370,29 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
     return;
   }
 
-  bool enable = strcmp(param[0], "ENABLE") == 0;
+  if ((strcasecmp(param[0], "NEW") == 0) && (params_number > 1)) {
 
-  if ((!enable && (strcmp(param[0], "DISABLE") != 0)) ||
-      (params_number < 2)) {
+    Z2S_setMultiDeviceNewMode(param[1]);
+    return;
+  }
+
+  uint8_t mode;
+
+  if ((strcasecmp(param[0], "SEPARATE") == 0) ||
+      (strcasecmp(param[0], "ENABLE") == 0))
+    mode = Z2S_MD_MODE_SEPARATE;
+  else
+  if ((strcasecmp(param[0], "GATEWAY") == 0) ||
+      (strcasecmp(param[0], "DISABLE") == 0))
+    mode = Z2S_MD_MODE_GATEWAY;
+  else
+    params_number = 0;
+
+  if (params_number < 2) {
 
     telnet.printf(
-      "\n\r>MULTIDEVICE [ENABLE|DISABLE <device slot>]\n\r>");
+      "\n\r>MULTIDEVICE [SEPARATE|GATEWAY <device slot>] "
+      "[NEW GATEWAY|SEPARATE|ASK]\n\r>");
     return;
   }
 
@@ -215,12 +418,6 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
       return;
 
     case Z2S_MultiDeviceIdentityResult::Missing:
-      if (!enable) {
-
-        telnet.printf("\n\r>Device #%u already uses gateway channels\n\r>",
-                      device_number_slot);
-        return;
-      }
       Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
       break;
 
@@ -228,7 +425,8 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
       break;
   }
 
-  identity.enabled = enable ? 1 : 0;
+  uint8_t old_mode = identity.mode;
+  identity.mode = mode;
 
   if (!Z2S_saveMultiDeviceIdentity(&identity)) {
 
@@ -237,7 +435,18 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
     return;
   }
 
+  if (Z2S_applyMultiDeviceMode(device_number_slot, identity))
+    Z2S_restartGatewaySession();
+
   telnet.printf(
-    "\n\r>Device #%u: %s after restart\n\r>", device_number_slot,
-    enable ? "separate Supla device" : "gateway channels");
+    "\n\r>Device #%u: %s\n\r", device_number_slot,
+    Z2S_getMultiDeviceModeName(mode));
+
+  // Channels registered by the gateway before stay in Supla Cloud until they
+  // are deleted there; till then the gateway cannot register.
+  if ((old_mode == Z2S_MD_MODE_GATEWAY) && (mode == Z2S_MD_MODE_SEPARATE))
+    telnet.printf(
+      ">Delete its channels of the gateway in Supla Cloud\n\r");
+
+  telnet.printf(">");
 }

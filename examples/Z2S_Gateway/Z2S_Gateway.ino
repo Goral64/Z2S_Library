@@ -1609,6 +1609,7 @@ void loop() {
                     }
                     //if (restart_required)  
                     Z2S_buildSuplaChannels(joined_device, endpoint_counter);
+                    Z2S_onMultiDeviceChannelsBuilt(joined_device->zb_device_id);
                   }          
                 }
                 //here starts new reporting code

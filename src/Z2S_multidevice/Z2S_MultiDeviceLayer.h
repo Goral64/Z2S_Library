@@ -24,10 +24,19 @@ class Z2S_MultiDeviceLayer : public Supla::Protocol::ProtocolLayer,
   ~Z2S_MultiDeviceLayer() override;
 
   // Adds a device with its channels (gateway channel numbers, in the order of
-  // the Supla device's channels). Call before SuplaDevice.begin().
-  bool addDevice(const uint8_t guid[SUPLA_GUID_SIZE],
+  // the Supla device's channels). `tag` identifies the device for the calls
+  // below. Before SuplaDevice.begin() or at runtime; the gateway's own session
+  // has to register again then (without these channels).
+  bool addDevice(uint32_t tag, const uint8_t guid[SUPLA_GUID_SIZE],
                  const uint8_t auth_key[SUPLA_AUTHKEY_SIZE], const char *name,
                  const uint8_t *channels, int count);
+  // New channel list of a device (e.g. channels added by the gateway); the
+  // device registers again. Channels left out go back to the gateway.
+  bool setDeviceChannels(uint32_t tag, const uint8_t *channels, int count);
+  // The device's channels go back to the gateway.
+  bool removeDevice(uint32_t tag);
+  // Index of a device, -1 when not added.
+  int findDevice(uint32_t tag) const;
   int deviceCount() const { return static_cast<int>(devices_.size()); }
   Z2S_MultiDeviceSession *session(int index) {
     return devices_[index].session.get();
@@ -83,11 +92,15 @@ class Z2S_MultiDeviceLayer : public Supla::Protocol::ProtocolLayer,
 
  private:
   struct Device {
+    uint32_t tag = 0;
     std::unique_ptr<Z2S_MultiDeviceSession> session;
     // local channel number -> gateway channel number
     std::vector<uint8_t> channels;
   };
 
+  bool checkChannels(const uint8_t *channels, int count, int device_index);
+  void applyChannels(Device *device, const uint8_t *channels, int count);
+  void rebuildChannelMap();
   // Session and local number of a gateway channel; nullptr when the channel
   // is not registered by this layer.
   Z2S_MultiDeviceSession *findChannel(int channel_number, int *local);

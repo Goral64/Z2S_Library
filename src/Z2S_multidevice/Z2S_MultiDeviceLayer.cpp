@@ -37,40 +37,111 @@ Z2S_MultiDeviceLayer::~Z2S_MultiDeviceLayer() {
   delete[] custom_ca_cert_;
 }
 
-bool Z2S_MultiDeviceLayer::addDevice(
-    const uint8_t guid[SUPLA_GUID_SIZE],
-    const uint8_t auth_key[SUPLA_AUTHKEY_SIZE], const char *name,
-    const uint8_t *channels, int count) {
-  if (count <= 0 || devices_.size() >= kNoDevice) return false;
-  std::vector<TDS_SuplaDeviceChannel_E> reg(count);
+bool Z2S_MultiDeviceLayer::checkChannels(const uint8_t *channels, int count,
+                                         int device_index) {
+  if (count <= 0) return false;
   for (int i = 0; i < count; i++) {
-    auto channel = Supla::Channel::GetByChannelNumber(channels[i]);
-    if (channel == nullptr || channels[i] >= SUPLA_CHANNELMAXCOUNT ||
-        device_of_channel_[channels[i]] != kNoDevice) {
-      Z2S_MD_LOG_E("Multidevice: invalid channel %u for %s", channels[i],
-                   name);
+    if (channels[i] >= SUPLA_CHANNELMAXCOUNT ||
+        Supla::Channel::GetByChannelNumber(channels[i]) == nullptr ||
+        (device_of_channel_[channels[i]] != kNoDevice &&
+         device_of_channel_[channels[i]] != device_index)) {
+      Z2S_MD_LOG_E("Multidevice: invalid channel %u", channels[i]);
       return false;
     }
-    channel->fillDeviceChannelStruct(&reg[i]);
   }
+  return true;
+}
 
-  Device device;
-  device.session.reset(new Z2S_MultiDeviceSession(&config_, &factory_, this));
-  device.session->setIdentity(guid, auth_key);
-  device.session->setName(name);
-  device.session->setChannels(reg.data(), count);
-  device.channels.assign(channels, channels + count);
+void Z2S_MultiDeviceLayer::applyChannels(Device *device, const uint8_t *channels,
+                                         int count) {
+  std::vector<TDS_SuplaDeviceChannel_E> reg(count);
+  for (int i = 0; i < count; i++) {
+    Supla::Channel::GetByChannelNumber(channels[i])
+        ->fillDeviceChannelStruct(&reg[i]);
+  }
+  device->session->setChannels(reg.data(), count);
+  device->channels.assign(channels, channels + count);
   for (int i = 0; i < count; i++) {
     auto channel = Supla::Channel::GetByChannelNumber(channels[i]);
     channel->setExternallyRegistered(true);
     if (channel->isInitialCaptionSet()) {
-      device.session->setChannelCaption(i, channel->getInitialCaption());
+      device->session->setChannelCaption(i, channel->getInitialCaption());
     }
-    device_of_channel_[channels[i]] = static_cast<uint8_t>(devices_.size());
-    local_of_channel_[channels[i]] = static_cast<uint8_t>(i);
   }
+}
+
+void Z2S_MultiDeviceLayer::rebuildChannelMap() {
+  memset(device_of_channel_, kNoDevice, sizeof(device_of_channel_));
+  for (size_t d = 0; d < devices_.size(); d++) {
+    for (size_t i = 0; i < devices_[d].channels.size(); i++) {
+      device_of_channel_[devices_[d].channels[i]] = static_cast<uint8_t>(d);
+      local_of_channel_[devices_[d].channels[i]] = static_cast<uint8_t>(i);
+    }
+  }
+}
+
+int Z2S_MultiDeviceLayer::findDevice(uint32_t tag) const {
+  for (size_t d = 0; d < devices_.size(); d++) {
+    if (devices_[d].tag == tag) return static_cast<int>(d);
+  }
+  return -1;
+}
+
+bool Z2S_MultiDeviceLayer::addDevice(
+    uint32_t tag, const uint8_t guid[SUPLA_GUID_SIZE],
+    const uint8_t auth_key[SUPLA_AUTHKEY_SIZE], const char *name,
+    const uint8_t *channels, int count) {
+  if (findDevice(tag) >= 0 || devices_.size() >= kNoDevice ||
+      !checkChannels(channels, count, kNoDevice)) {
+    return false;
+  }
+  Device device;
+  device.tag = tag;
+  device.session.reset(new Z2S_MultiDeviceSession(&config_, &factory_, this));
+  device.session->setIdentity(guid, auth_key);
+  device.session->setName(name);
+  applyChannels(&device, channels, count);
   devices_.push_back(std::move(device));
+  rebuildChannelMap();
   Z2S_MD_LOG_I("Multidevice: %s added (%d channel(s))", name, count);
+  return true;
+}
+
+bool Z2S_MultiDeviceLayer::setDeviceChannels(uint32_t tag,
+                                             const uint8_t *channels,
+                                             int count) {
+  int index = findDevice(tag);
+  if (index < 0 || !checkChannels(channels, count, index)) return false;
+  auto &device = devices_[index];
+  if (device.channels.size() == static_cast<size_t>(count) &&
+      memcmp(device.channels.data(), channels, count) == 0) {
+    return true;
+  }
+  // Channels no longer listed go back to the gateway.
+  for (uint8_t channel_number : device.channels) {
+    if (memchr(channels, channel_number, count) == nullptr) {
+      auto channel = Supla::Channel::GetByChannelNumber(channel_number);
+      if (channel) channel->setExternallyRegistered(false);
+    }
+  }
+  // A changed layout makes the session register again.
+  applyChannels(&device, channels, count);
+  rebuildChannelMap();
+  Z2S_MD_LOG_I("Multidevice: %s has now %d channel(s)",
+               device.session->name(), count);
+  return true;
+}
+
+bool Z2S_MultiDeviceLayer::removeDevice(uint32_t tag) {
+  int index = findDevice(tag);
+  if (index < 0) return false;
+  for (uint8_t channel_number : devices_[index].channels) {
+    auto channel = Supla::Channel::GetByChannelNumber(channel_number);
+    if (channel) channel->setExternallyRegistered(false);
+  }
+  Z2S_MD_LOG_I("Multidevice: %s removed", devices_[index].session->name());
+  devices_.erase(devices_.begin() + index);
+  rebuildChannelMap();
   return true;
 }
 
