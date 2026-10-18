@@ -14,11 +14,11 @@ Good to know:
 - the Multidevice tab has to be turned on in the Gateway tab under "Select GUI tabs" (restart needed) on gateways with a saved tab selection,
 - every separate device needs registration of new devices enabled in SUPLA Cloud and counts towards the device limit of the account,
 - channels of a device moved from the gateway stay at the gateway in SUPLA Cloud until you delete them there; until then the gateway cannot register,
-- every separate device has its own TLS connection, so memory limits how many there can be; so far I have tried it with a few devices on ESP32-C6 with 8 MB flash, and only that build is made.
+- every separate device has its own TLS connection, so memory limits how many there can be; so far I have tried it with a few devices on ESP32-C6 with 8 MB flash. There is also a build for C6 with 4 MB flash, without OTA.
 
-This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn`. The build script applies a small patch to supla-device (`core/supla-device-multidevice.patch`), the arduino-cli builds of the main branch don't have it.
+This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn` (or `esp32c6_4MB_dyn`). The build script applies a small patch to supla-device (`core/supla-device-multidevice.patch`), the arduino-cli builds of the main branch don't have it.
 
-Firmware is built by GitHub Actions after every push: open [Build multidevice](https://github.com/Goral64/Z2S_Library/actions/workflows/multidevice.yml), pick the latest run and download the zip from Artifacts at the bottom of the page (you have to be logged in to GitHub). The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**).
+Firmware is built by GitHub Actions after every push: open [Build multidevice](https://github.com/Goral64/Z2S_Library/actions/workflows/multidevice.yml), pick the latest run and download the zip for your flash size from Artifacts at the bottom of the page (you have to be logged in to GitHub). The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**) on 8 MB, on 4 MB it goes at address 0x10000.
 
 ## Table of Contents:
 

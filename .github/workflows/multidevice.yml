@@ -12,8 +12,19 @@ permissions:
   contents: write
 jobs:
   build:
-    name: Build C6 8MB
+    name: Build C6 ${{ matrix.flash }}
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.collect.outputs.version }}
+    strategy:
+      matrix:
+        include:
+          - flash: 8MB
+            env: esp32c6_8MB_dyn
+            name: 8MB.OTA.logs
+          - flash: 4MB
+            env: esp32c6_4MB_dyn
+            name: 4MB.no_OTA.logs
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,31 +38,44 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio==6.1.18
       - name: Compile
-        run: pio run -e esp32c6_8MB_dyn
+        run: pio run -e ${{ matrix.env }}
       - name: Collect binaries
+        id: collect
         run: |
           VERSION=$(sed -n 's/#define Z2S_VERSION "Z2S-\([0-9.]*\)-.*"/\1/p' examples/Z2S_Gateway/z2s_version_info.h)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          BUILD=.pio/build/esp32c6_8MB_dyn
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          BUILD=.pio/build/${{ matrix.env }}
           mkdir out
-          cp $BUILD/firmware.bin out/Z2S_Gateway.multidevice.8MB.OTA.logs.update_only.bin
+          cp $BUILD/firmware.bin out/Z2S_Gateway.multidevice.${{ matrix.name }}.update_only.bin
           ~/.platformio/penv/bin/python ~/.platformio/packages/tool-esptoolpy/esptool.py \
-            --chip esp32c6 merge_bin --flash_mode dio --flash_size 8MB \
-            -o out/Z2S_Gateway.multidevice.8MB.OTA.logs.full_version.bin \
+            --chip esp32c6 merge_bin --flash_mode dio --flash_size ${{ matrix.flash }} \
+            -o out/Z2S_Gateway.multidevice.${{ matrix.name }}.full_version.bin \
             0x0 $BUILD/bootloader.bin 0x8000 $BUILD/partitions.bin \
             0xe000 ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin \
             0x10000 $BUILD/firmware.bin
       - uses: actions/upload-artifact@v4
         with:
-          name: Z2S_Gateway.multidevice-${{ env.VERSION }}-${{ github.run_number }}
+          name: Z2S_Gateway.multidevice-${{ env.VERSION }}-${{ github.run_number }}-${{ matrix.flash }}
           path: out/*.bin
+  release:
+    name: Release
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
       - name: Create a GitHub release
-        if: github.event_name == 'workflow_dispatch' && inputs.release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION=${{ needs.build.outputs.version }}
           TAG=multidevice-$VERSION-${{ github.run_number }}
-          gh release create $TAG out/*.bin --prerelease --target ${{ github.sha }} \
+          gh release create $TAG out/*.bin --repo ${{ github.repository }} --prerelease --target ${{ github.sha }} \
             --title "Multidevice $VERSION (build ${{ github.run_number }})" \
-            --notes "Experimental multidevice build for ESP32-C6 with 8 MB flash, based on Z2S $VERSION.
-          full_version: flash at 0x0. update_only: OTA update of a gateway already running an 8 MB build."
+            --notes "Experimental multidevice build for ESP32-C6, based on Z2S $VERSION.
+          full_version: flash at 0x0. update_only (8MB): OTA update of a gateway already running an 8 MB build.
+          4MB: no OTA, update_only goes at 0x10000 over USB."
