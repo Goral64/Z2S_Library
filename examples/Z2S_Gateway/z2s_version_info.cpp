@@ -50,8 +50,10 @@ bool isVersionNewer(const char* current, const char* latest) {
       return false; 
     }
 
-    // Multidevice releases are counted on their own, whatever Z2S version
-    // they are based on.
+    // Z2S version first, then the multidevice release for that version.
+    if (latestMajor != currentMajor) return latestMajor > currentMajor;
+    if (latestMinor != currentMinor) return latestMinor > currentMinor;
+    if (latestPatch != currentPatch) return latestPatch > currentPatch;
     return latestRelease > currentRelease;
 }
 
