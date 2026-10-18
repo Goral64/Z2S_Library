@@ -14,6 +14,12 @@ void Z2S_initMultiDevice(
 // "MULTIDEVICE NEW" says.
 void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot);
 /*****************************************************************************/
+// Call before a Zigbee device is removed from the devices table. The identity
+// of a device using gateway channels (or waiting for choice) is deleted, so
+// that it is a new device when paired again; a separate device keeps it and
+// comes back as the same Supla device.
+void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot);
+/*****************************************************************************/
 // MULTIDEVICE [SEPARATE|GATEWAY|FORGET <device slot>]
 //             [NEW GATEWAY|SEPARATE|ASK]
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param);

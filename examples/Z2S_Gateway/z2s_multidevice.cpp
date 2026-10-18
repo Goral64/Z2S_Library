@@ -253,6 +253,28 @@ void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot) {
 
 /*****************************************************************************/
 
+void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot) {
+
+  if ((device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER) || 
+      (z2s_zb_devices_table[device_number_slot].record_id == 0))
+    return;
+
+  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+
+  z2s_md_identity_t identity;
+
+  if ((Z2S_loadMultiDeviceIdentity(ieee_addr, &identity) == 
+       Z2S_MultiDeviceIdentityResult::Loaded) && 
+      (identity.mode != Z2S_MD_MODE_SEPARATE)) {
+
+    log_i(
+      "Multidevice: device #%u removed, identity %s", device_number_slot, 
+      Z2S_deleteMultiDeviceIdentity(ieee_addr) ? "deleted" : "not deleted");
+  }
+}
+
+/*****************************************************************************/
+
 static const char *Z2S_getMultiDeviceStateName(
   Z2S_MultiDeviceSession *session) {
 

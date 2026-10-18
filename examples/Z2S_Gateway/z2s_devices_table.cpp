@@ -31,6 +31,7 @@
 #include "z2s_little_fs.h"
 #include "z2s_device_local_action_handler.h"
 #include "z2s_web_gui.h"
+#include "z2s_multidevice.h"
 
 /*****************************************************************************/
 
@@ -829,6 +830,8 @@ bool Z2S_removeZbDevice(uint8_t zb_device_slot, bool save_table) {
 
   if (z2s_zb_devices_table[zb_device_slot].record_id > 0) {
 
+    Z2S_onMultiDeviceRemoved(zb_device_slot);
+
     if (Zigbee.started())
       zbGateway.sendDeviceLeaveRequest(
         z2s_zb_devices_table[zb_device_slot].ieee_addr, 
@@ -854,6 +857,8 @@ bool Z2S_removeZbDeviceWithAllChannels(
   uint8_t zb_device_slot, bool save_tables) {
 
   if (z2s_zb_devices_table[zb_device_slot].record_id > 0) {
+
+    Z2S_onMultiDeviceRemoved(zb_device_slot);
 
     auto z2s_core = Z2S_Core::getZ2SCoreByZbDeviceId(zb_device_slot);
 
