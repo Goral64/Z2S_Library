@@ -27,5 +27,9 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param);
 // "Multidevice" tab of the web GUI.
 void Z2S_buildMultiDeviceTabGUI();
 /*****************************************************************************/
+// Zigbee device selector of the tab (0xFFFF when not built) and the device
+// selected in it, for the web GUI code that fills device selectors.
+uint16_t Z2S_getMultiDeviceSelector(int32_t *selected_slot);
+/*****************************************************************************/
 
 #endif //Z2S_MULTIDEVICE_H_

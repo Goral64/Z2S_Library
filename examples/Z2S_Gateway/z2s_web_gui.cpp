@@ -4427,6 +4427,17 @@ void sortZbDevicesSelectorsMain(int32_t select_value = -1) {
 		  ZB_DEVICE_SELECT_TYPE_TCC, select_value, 1,
 		  Tuya_devices_tab_controls_table[Tuya_device_selector]);
 	}
+
+	int32_t multidevice_selected_slot;
+	uint16_t multidevice_selector =
+	  Z2S_getMultiDeviceSelector(&multidevice_selected_slot);
+
+	if (multidevice_selector < 0xFFFF) {
+
+		buildZbDevicesSelectJsonPayload(
+		  ZB_DEVICE_SELECT_TYPE_ALL, multidevice_selected_slot, 1,
+		  multidevice_selector);
+	}
 }
 
 /*****************************************************************************/

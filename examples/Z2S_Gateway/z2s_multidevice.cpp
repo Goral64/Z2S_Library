@@ -794,8 +794,7 @@ static uint16_t multiDeviceMessageLabel = 0xFFFF;
 
 static volatile int16_t multiDeviceSelectedSlot = -1;
 
-// ESPUI keeps pointers to labels.
-static String multiDeviceOptionLabels[Z2S_ZB_DEVICES_MAX_NUMBER];
+static uint16_t multiDeviceSelector = 0xFFFF;
 
 static uint32_t multiDeviceGUIRefreshMs = 0;
 
@@ -883,6 +882,14 @@ static void Z2S_refreshMultiDeviceGUI(const char *message) {
 
 /*****************************************************************************/
 
+uint16_t Z2S_getMultiDeviceSelector(int32_t *selected_slot) {
+
+  *selected_slot = multiDeviceSelectedSlot;
+  return multiDeviceSelector;
+}
+
+/*****************************************************************************/
+
 void Z2S_buildMultiDeviceTabGUI() {
 
   multiDeviceGUIQueue = xQueueCreate(8, sizeof(multidevice_gui_command_t));
@@ -899,32 +906,12 @@ void Z2S_buildMultiDeviceTabGUI() {
   ESPUI.getControl(multiDeviceStatusLabel)->reserve(4096);
   ESPUI.setPanelWide(multiDeviceStatusLabel, true);
 
+  // Options are sent with the other Zigbee device selectors (also after
+  // pairing), see Z2S_getMultiDeviceSelector().
   auto device_selector = ESPUI.addControl(
     Control::Type::Select, "Zigbee device", (long int)-1,
     Control::Color::Dark, multidevice_tab, Z2S_multiDeviceSelectorCallback);
-
-  ESPUI.addControl(
-    Control::Type::Option, "Select device...", (long int)-1,
-    Control::Color::None, device_selector);
-
-  // Devices paired later come with the GUI rebuilt after the restart that
-  // follows pairing.
-  for (uint8_t devices_counter = 0;
-       devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
-
-    if (!Z2S_isMultiDeviceSlotValid(devices_counter))
-      continue;
-
-    char name[SUPLA_DEVICE_NAME_MAXSIZE];
-    Z2S_getMultiDeviceName(devices_counter, name, sizeof(name));
-
-    multiDeviceOptionLabels[devices_counter] =
-      String("#") + devices_counter + " " + name;
-
-    ESPUI.addControl(
-      Control::Type::Option, multiDeviceOptionLabels[devices_counter].c_str(),
-      (long int)devices_counter, Control::Color::None, device_selector);
-  }
+  multiDeviceSelector = device_selector;
 
   ESPUI.addControl(
     Control::Type::Button, "", "Separate Supla device", Control::Color::Dark,
