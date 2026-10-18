@@ -23,6 +23,7 @@ void onTelnetConnect(String ip) {
   Serial.print(ip);
   Serial.println(" connected");
   
+  telnet.clearInput();
   printTelnetWelcome();
 }
 
@@ -37,6 +38,7 @@ void onTelnetReconnect(String ip) {
   Serial.print(ip);
   Serial.println("> reconnected");
 
+  telnet.clearInput();
   printTelnetWelcome();
 }
 
