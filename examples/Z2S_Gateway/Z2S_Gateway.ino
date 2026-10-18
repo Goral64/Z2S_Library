@@ -542,12 +542,19 @@ static int32_t parse_int(const char *s, size_t len) {
   return strtol(tmp, nullptr, 10);
 }
 
-void setup() {
-
 #if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
-  // Logs on native USB must not wait for a computer that does not read them.
-  Serial.setTxTimeoutMs(0);
+// Logs on native USB must not wait for a computer that does not read them:
+// after 1 ms without progress the port counts as disconnected until the
+// computer reads again (0 would wait forever in HWCDC::write). Set here, as the
+// core calls it before the chip report printed before setup().
+uint64_t getArduinoSetupWaitTime_ms() {
+
+  Serial.setTxTimeoutMs(1);
+  return 0;
+}
 #endif
+
+void setup() {
 
   log_i("Z2S GATEWAY setup has just started!");
 
