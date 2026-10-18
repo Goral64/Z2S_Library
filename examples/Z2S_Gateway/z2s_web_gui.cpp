@@ -4951,7 +4951,7 @@ void Z2S_startWebGUI() {
 	ESPUI.setCustomJS(myCustomJS);
 	//ESPUI.setVerbosity(Verbosity::VerboseJSON);
 
-	ESPUI.begin("ZIGBEE <=> SUPLA CONTROL PANEL");
+	ESPUI.begin("ZIGBEE <=> SUPLA (MULTIDEVICE) CONTROL PANEL");
 	GUIstarted = true;
 	handleGatewayEvent(Z2S_SUPLA_EVENT_ON_GUI_STARTED);
 
