@@ -89,8 +89,9 @@
 #define Z2S_TCP_CMD_UPDATE_HUMIDITY       0x11
 #define Z2S_TCP_CMD_UPDATE_PRESSURE       0x12
 
-alignas(8) static uint8_t custom_heap_buf[48 * 1024]; 
-static multi_heap_handle_t my_custom_heap = nullptr;
+alignas(8) static uint8_t custom_heap_buffer[64 * 1024]; 
+multi_heap_handle_t _z2s_custom_heap = nullptr;
+static portMUX_TYPE custom_heap_spinlock = portMUX_INITIALIZER_UNLOCKED;
 
 static constexpr char *Z2S_TCP_CMD PROGMEM = "Z2SCMD";
 
@@ -148,37 +149,48 @@ SemaphoreHandle_t saveMutex;
 inline bool is_in_custom_heap(void* ptr) {
     
     uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
-    uintptr_t start = reinterpret_cast<uintptr_t>(custom_heap_buf);
-    uintptr_t end = start + sizeof(custom_heap_buf);
+    uintptr_t start = reinterpret_cast<uintptr_t>(custom_heap_buffer);
+    uintptr_t end = start + sizeof(custom_heap_buffer);
     return (p >= start && p < end);
 }
 
 void* operator new(size_t size) {
-    void* ptr = nullptr;
+   
+  void* ptr = nullptr;
 
-    // Try allocating from custom heap if registered
-    if (my_custom_heap != nullptr) {
-        ptr = multi_heap_malloc(my_custom_heap, size);
-    }
+  // Try allocating from custom heap if registered
+  //if ((size < 256) && (_z2s_custom_heap != nullptr)) {
+  if (_z2s_custom_heap != nullptr) {
+  
+    taskENTER_CRITICAL(&custom_heap_spinlock);
+    ptr = multi_heap_malloc(_z2s_custom_heap, size);
+    taskEXIT_CRITICAL(&custom_heap_spinlock);
+  }
 
-    // Fallback to system heap if custom heap is full or not initialized yet
-    if (!ptr) {
-        ptr = malloc(size);
-    }
+  // Fallback to system heap if custom heap is full or not initialized yet
+  if (!ptr) {
+    ptr = malloc(size);
+  }
 
-    if (!ptr) throw std::bad_alloc();
-    return ptr;
+  if (!ptr) throw std::bad_alloc();
+  
+  return ptr;
 }
 
 void operator delete(void* ptr) noexcept {
-    if (!ptr) return;
+    
+  if (!ptr) return;
 
-    // Check which heap owns this memory pointer
-    if (is_in_custom_heap(ptr)) {
-        multi_heap_free(my_custom_heap, ptr);
-    } else {
-        free(ptr); // System heap
-    }
+  // Check which heap owns this memory pointer
+  if (is_in_custom_heap(ptr)) {
+
+    taskENTER_CRITICAL(&custom_heap_spinlock);
+    multi_heap_free(_z2s_custom_heap, ptr);
+    taskEXIT_CRITICAL(&custom_heap_spinlock);
+  } 
+  else {
+    free(ptr); // System heap
+  }
 }
 
 
@@ -558,8 +570,8 @@ void setup() {
 
   log_i("Z2S GATEWAY setup has just started!");
 
-  my_custom_heap = multi_heap_register(
-    custom_heap_buf, sizeof(custom_heap_buf));
+  _z2s_custom_heap = multi_heap_register(
+    custom_heap_buffer, sizeof(custom_heap_buffer));
 
   setupCpuMonitoring();
 
@@ -759,9 +771,9 @@ void setup() {
 
     if (Z2S_loadZbDevicesTable()) {
 
-      Z2S_printZbDevicesTableSlots(false);
-
       Z2S_initZbDevices(millis());
+
+      Z2S_printZbDevicesTableSlots(false);
 
       if (Z2S_loadChannelsTable()) {
 
@@ -998,39 +1010,6 @@ void setup() {
   
   refresh_time = millis();
 
-
-   /*client.onDisconnect([](void *arg, AsyncClient *client) {
-    Serial.printf("Disconnected.\n");
-    tcp_connect_state = 0;
-  });
-
-  // register a callback when an error occurs
-  client.onError([](void *arg, AsyncClient *client, int8_t error) {
-    Serial.printf("Error: %s\n", client->errorToString(error));
-  });
-
-  // register a callback when data arrives, to accumulate it
-  client.onData([](void *arg, AsyncClient *client, void *data, size_t len) {
-    Serial.printf("Received %u bytes...\n", len);
-    Serial.write((uint8_t *)data, len);
-  });
-
-  // register a callback when we are connected
-  client.onConnect([](void *arg, AsyncClient *client) {
-    Serial.printf("Connected!\n");
-    tcp_connect_state = 2;
-  });
-
-  client.onAck([](void *arg, AsyncClient *client, size_t len, uint32_t time) {
-    Serial.printf("Acked %u bytes in %" PRIu32 " ms\n", len, time);
-    assert(waitingAck >= len);
-    waitingAck -= len;
-  });
-
-  client.setRxTimeout(20000);
-  client.setNoDelay(true);
-*/
-
   /*zbg_device_params_t test_joined_device = {};
 
   test_joined_device.model_id = Z2S_DEVICE_DESC_DIMMER_CT_BULB;
@@ -1057,8 +1036,12 @@ void setup() {
   esp_task_wdt_delete(NULL);
   esp_task_wdt_delete(Zigbee.getZigbeeTaskHandle());
 
-  //LuaState = luaL_newstate();
+  /*LuaState = luaL_newstate();
   //luaL_openlibs(LuaState);
+  lua_pushcfunction(LuaState, luaopen_base); lua_call(LuaState, 0, 0); 
+  lua_pushcfunction(LuaState, luaopen_math); lua_call(LuaState, 0, 0); 
+  lua_pushcfunction(LuaState, luaopen_string); lua_call(LuaState, 0, 0); 
+  lua_pushcfunction(LuaState, luaopen_table); lua_call(LuaState, 0, 0);*/
 }
 
 zbg_device_params_t *gateway_device;
@@ -1225,18 +1208,17 @@ void loop() {
       "\n\rUTC time attribute %lu\n\rlocal time attribute %lu", 
       time_status_attribute, utc_time_attribute, local_time_attribute);
 
-    for (uint8_t devices_counter = 0; 
-         devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
+    for (Z2S_Device *device : Z2S_Devices) {
 
-      if (Z2S_checkZbDeviceFlags(
-            devices_counter, ZBD_USER_DATA_FLAG_TUYA_FORCE_TIME_SYNC)) {
-        
+      if (device && (device->checkDeviceUserDataFlags(
+            ZBD_USER_DATA_FLAG_TUYA_FORCE_TIME_SYNC))) {
+
         esp_zb_lock_acquire(portMAX_DELAY);
 
         processTuyaCustomCluster(
-          1, z2s_zb_devices_table[devices_counter].short_addr, 1, 
-          TUYA_MCU_SYNC_TIME, 0, nullptr);
-        
+          1, device->getDeviceShortAddress(), 1, TUYA_MCU_SYNC_TIME, 0, 
+          nullptr);
+
         esp_zb_lock_release();
       }
     }
@@ -1264,28 +1246,28 @@ void loop() {
 
   if (millis() - refresh_time > REFRESH_PERIOD) {
 
-    for (uint8_t devices_counter = 0; 
-         devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
+    for (Z2S_Device *device : Z2S_Devices) {
+      if (device && 
+          (device->getDeviceDescId() == 
+            Z2S_DEVICE_DESC_TUYA_SMART_POOL_SENSOR)) {
 
-      if (z2s_zb_devices_table[devices_counter].desc_id == 
-          Z2S_DEVICE_DESC_TUYA_SMART_POOL_SENSOR) {
+        zbg_device_params_t dev_params = {};
 
-        zbg_device_params_t device = {};
+        dev_params.endpoint = 1;
+        dev_params.short_addr = device->getDeviceShortAddress();
 
-        device.endpoint = 1;
-        device.short_addr = z2s_zb_devices_table[devices_counter].short_addr;
-    
         sendTuyaRequestCmdValue32(
-          &zbGateway, &device, TUYA_SMART_POOL_SENSOR_BACKLIGHT_DP, 1, true);
-        
+          &zbGateway, &dev_params, TUYA_SMART_POOL_SENSOR_BACKLIGHT_DP, 1, 
+          true);
+
         delay(2000); //== vTaskDelay
 
         sendTuyaRequestCmdValue32(
-          &zbGateway, &device, TUYA_SMART_POOL_SENSOR_BACKLIGHT_DP, 0, true);
+          &zbGateway, &dev_params, TUYA_SMART_POOL_SENSOR_BACKLIGHT_DP, 0, 
+          true);
       }
-      
-      refresh_time = millis();
     }
+    refresh_time = millis();
   }
 
   if ((!zbGateway.getJoinedDevices().empty()) && 
@@ -1596,13 +1578,14 @@ void loop() {
 
                     if (endpoint_counter == 0) {//(endpoint_id == 1)
                           
-                      uint8_t zb_device_slot = Z2S_findZbDeviceTableSlot(
-                        joined_device->ieee_addr);
+                      //uint8_t zb_device_slot = Z2S_findZbDeviceTableSlot(
+                      //  joined_device->ieee_addr);
                       
                       //if (zb_device_slot < 0xFF)
                         restart_required = false;
 
-                      zb_device_slot = Z2S_addZbDeviceTableSlot(
+                      //zb_device_slot = 
+                      Z2S_Device * z2s_device = Z2S_addZbDeviceTableSlot(
                         joined_device->ieee_addr, joined_device->short_addr,
                         zbGateway.getQueryBasicClusterData()->zcl_manufacturer_name,
                         zbGateway.getQueryBasicClusterData()->zcl_model_name,
@@ -1610,14 +1593,13 @@ void loop() {
                         z2s_device_list.z2s_device_desc_id,
                         zbGateway.getQueryBasicClusterData()->zcl_power_source_id);
 
-                      if (zb_device_slot < 0xFF) {
+                      if (z2s_device) {
 
-                        Z2S_syncZbDeviceDescFlags(
-                          devices_desc_counter, zb_device_slot);
-                        Z2S_clearZbDeviceFlags(
-                          zb_device_slot, ZBD_USER_DATA_FLAG_BINDING_REQUIRED);
+                        z2s_device->syncDeviceDescFlags(devices_desc_counter);
+                        z2s_device->clearDeviceUserDataFlags(
+                          ZBD_USER_DATA_FLAG_BINDING_REQUIRED);
                       }
-                      joined_device->zb_device_id = zb_device_slot;
+                      joined_device->zb_device_id = z2s_device->getDeviceIndex();
                     }
                     //if (restart_required)  
                     Z2S_buildSuplaChannels(joined_device, endpoint_counter);
@@ -2061,15 +2043,16 @@ void loop() {
         
         Z2S_printZbDevicesTableSlots();
 
-        uint8_t zb_device_slot = Z2S_findZbDeviceTableSlot(
+        Z2S_Device *z2s_device = Z2S_Device::getZ2SDeviceByIeeeAddress(
           joined_device->ieee_addr);
 
-        if (zb_device_slot < 0xFF) {
+        if (z2s_device) {
           
           log_i(
-            "Removing incomplete ZigBee device#%u", zb_device_slot);
+            "Removing incomplete ZigBee device#%u", 
+            z2s_device->getDeviceIndex());
 
-          Z2S_removeZbDevice(zb_device_slot, true);
+          Z2S_removeZbDevice(z2s_device->getDeviceIndex());
         
           Z2S_printZbDevicesTableSlots();
         }

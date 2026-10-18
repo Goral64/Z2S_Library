@@ -3451,6 +3451,7 @@ void processTuyaDataReport(
     case Z2S_DEVICE_DESC_TS0601_TRV_TV02:
     case Z2S_DEVICE_DESC_TS0601_TRV_SITERWELL:
     case Z2S_DEVICE_DESC_TS0601_TRV_TRV16:
+    case Z2S_DEVICE_DESC_TS0601_TRV_GTVZB:
     case Z2S_DEVICE_DESC_TS0601_ZWT_ZWT198:
     case Z2S_DEVICE_DESC_TS0601_ZWT_ZWT100:
     case Z2S_DEVICE_DESC_TS0601_HY08WE:
@@ -3890,10 +3891,11 @@ void processTuyaCustomCluster(
 
       uint8_t seq[2];
     
-      uint8_t zb_device_slot = Z2S_findZbDeviceTableSlot(short_addr);
+      Z2S_Device *z2s_device = Z2S_Device::getZ2SDeviceByShortAddress(
+        short_addr);
 
-      if (!Z2S_checkZbDeviceFlags(
-            zb_device_slot, ZBD_USER_DATA_FLAG_TUYA_MCU_VERSION_REQUEST)) {
+      if (z2s_device->checkDeviceUserDataFlags(
+        ZBD_USER_DATA_FLAG_TUYA_MCU_VERSION_REQUEST)) {
         
         log_i(
           "Ignoring TUYA_MCU_VERSION_RESPONSE message for 0x%04X(EP#%02u)",

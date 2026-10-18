@@ -31,6 +31,18 @@ static const char *multiDevice3rdPartyCACert = nullptr;
 // by hand.
 static bool multiDeviceStarted = false;
 
+/*****************************************************************************/
+
+// The Zigbee device in a slot of the devices table, nullptr for a free slot.
+static Z2S_Device *Z2S_getMultiDeviceZbDevice(uint8_t device_number_slot) {
+
+  auto device = Z2S_Device::getZ2SDeviceByDeviceIndex(device_number_slot);
+
+  return (device && (device->getRecordId() > 0)) ? device : nullptr;
+}
+
+/*****************************************************************************/
+
 // Mode of each Zigbee device from its identity file (0xFF = damaged file).
 // The web GUI shows it every 10 s, so the file is read again only after it
 // changed or when another device took the slot.
@@ -56,7 +68,8 @@ static void Z2S_forgetMultiDeviceModes() {
 static uint8_t Z2S_getMultiDeviceMode(uint8_t device_number_slot) {
 
   auto &cached_mode = multiDeviceModes[device_number_slot];
-  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+  auto ieee_addr = 
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getDeviceIeeeAddress();
 
   if (cached_mode.read &&
       (memcmp(cached_mode.ieee_addr, ieee_addr, sizeof(esp_zb_ieee_addr_t)) ==
@@ -116,11 +129,11 @@ static void Z2S_restartGatewaySession() {
 static void Z2S_getMultiDeviceName(
   uint8_t device_number_slot, char *name, size_t name_size) {
 
+  auto device = Z2S_getMultiDeviceZbDevice(device_number_slot);
+
   snprintf(
-    name, name_size, "%s (%s::%s)",
-    Z2S_getZbDeviceLocalName(device_number_slot),
-    Z2S_getZbDeviceManufacturerName(device_number_slot),
-    Z2S_getZbDeviceModelName(device_number_slot));
+    name, name_size, "%s (%s::%s)", device->getDeviceLocalName(),
+    device->getManufacturerName(), device->getModelName());
 }
 
 /*****************************************************************************/
@@ -248,7 +261,7 @@ static bool Z2S_isMultiDeviceActive(uint8_t device_number_slot) {
 
   // Bit 7: secondary battery.
   uint8_t power_source = 
-    z2s_zb_devices_table[device_number_slot].power_source & 0x7F;
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getPowerSource() & 0x7F;
 
   return (power_source != ZB_POWER_SOURCE_UNKNOWN) && 
          (power_source != ZB_POWER_SOURCE_BATTERY);
@@ -279,7 +292,8 @@ static uint32_t Z2S_getMultiDeviceChannelsTimeoutMs(
 // counted from the start.
 static uint32_t Z2S_getMultiDeviceSilenceMs(uint8_t device_number_slot) {
 
-  return millis() - z2s_zb_devices_table[device_number_slot].last_seen_ms;
+  return millis() - 
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getLastSeenMs();
 }
 
 /*****************************************************************************/
@@ -313,7 +327,7 @@ static void Z2S_pingMultiDevice(uint8_t device_number_slot) {
   log_i("Multidevice: pinging device #%u", device_number_slot);
 
   zbGateway.sendAttributeRead(
-    z2s_zb_devices_table[device_number_slot].short_addr, 
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getDeviceShortAddress(), 
     z2s_core->getZ2SChannel()->endpoint, ESP_ZB_ZCL_CLUSTER_ID_BASIC, 
     ESP_ZB_ZCL_ATTR_BASIC_ZCL_VERSION_ID);
 
@@ -388,7 +402,9 @@ public:
 
       int device_index = multiDeviceLayer->findDevice(devices_counter);
 
-      if (device_index < 0)
+      // The session of a removed Zigbee device stays until restart.
+      if ((device_index < 0) ||
+          (Z2S_getMultiDeviceZbDevice(devices_counter) == nullptr))
         continue;
 
       auto session = multiDeviceLayer->session(device_index);
@@ -415,10 +431,12 @@ void Z2S_initMultiDevice(
   for (uint8_t devices_counter = 0;
        devices_counter < Z2S_ZB_DEVICES_MAX_NUMBER; devices_counter++) {
 
-    if (z2s_zb_devices_table[devices_counter].record_id == 0)
+    auto device = Z2S_getMultiDeviceZbDevice(devices_counter);
+
+    if (device == nullptr)
       continue;
 
-    auto ieee_addr = z2s_zb_devices_table[devices_counter].ieee_addr;
+    auto ieee_addr = device->getDeviceIeeeAddress();
 
     z2s_md_identity_t identity;
 
@@ -454,11 +472,12 @@ void Z2S_initMultiDevice(
 
 void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot) {
 
-  if ((device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER) ||
-      (z2s_zb_devices_table[device_number_slot].record_id == 0))
+  auto device = Z2S_getMultiDeviceZbDevice(device_number_slot);
+
+  if (device == nullptr)
     return;
 
-  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+  auto ieee_addr = device->getDeviceIeeeAddress();
 
   z2s_md_identity_t identity;
 
@@ -493,11 +512,12 @@ void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot) {
 
 void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot) {
 
-  if ((device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER) ||
-      (z2s_zb_devices_table[device_number_slot].record_id == 0))
+  auto device = Z2S_getMultiDeviceZbDevice(device_number_slot);
+
+  if (device == nullptr)
     return;
 
-  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+  auto ieee_addr = device->getDeviceIeeeAddress();
 
   z2s_md_identity_t identity;
 
@@ -550,8 +570,7 @@ static const char *multiDeviceNewModeNames[] = { "GATEWAY", "SEPARATE", "ASK" };
 
 static bool Z2S_isMultiDeviceSlotValid(uint8_t device_number_slot) {
 
-  return (device_number_slot < Z2S_ZB_DEVICES_MAX_NUMBER) &&
-         (z2s_zb_devices_table[device_number_slot].record_id > 0);
+  return Z2S_getMultiDeviceZbDevice(device_number_slot) != nullptr;
 }
 
 /*****************************************************************************/
@@ -565,7 +584,8 @@ static uint8_t Z2S_describeMultiDevice(
 
   char ieee_addr_str[24];
   ieee_addr_to_str(
-    ieee_addr_str, z2s_zb_devices_table[device_number_slot].ieee_addr);
+    ieee_addr_str,
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getDeviceIeeeAddress());
 
   char name[SUPLA_DEVICE_NAME_MAXSIZE];
   Z2S_getMultiDeviceName(device_number_slot, name, sizeof(name));
@@ -639,7 +659,8 @@ static void Z2S_setMultiDeviceMode(
     return;
   }
 
-  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+  auto ieee_addr =
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getDeviceIeeeAddress();
 
   z2s_md_identity_t identity;
 
@@ -698,7 +719,8 @@ static void Z2S_forgetMultiDevice(
     return;
   }
 
-  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+  auto ieee_addr =
+    Z2S_getMultiDeviceZbDevice(device_number_slot)->getDeviceIeeeAddress();
 
   z2s_md_identity_t identity;
 
