@@ -11,14 +11,19 @@ char separator_line[] = "-------------------------------------------------------
 
 /* ------------------------------------------------- */
 
+void printTelnetWelcome() {
+  telnet.println("\n>Welcome " + telnet.getIP());
+  telnet.println(">Use quit  to disconnect.");
+  telnet.print(">");
+}
+
 // (optional) callback functions for telnet events
 void onTelnetConnect(String ip) {
   Serial.print("- Telnet: ");
   Serial.print(ip);
   Serial.println(" connected");
   
-  telnet.println("\n>Welcome " + telnet.getIP());
-  telnet.println(">Use quit  to disconnect.");
+  printTelnetWelcome();
 }
 
 void onTelnetDisconnect(String ip) {
@@ -31,6 +36,8 @@ void onTelnetReconnect(String ip) {
   Serial.print(">- Telnet: ");
   Serial.print(ip);
   Serial.println("> reconnected");
+
+  printTelnetWelcome();
 }
 
 void onTelnetConnectionAttempt(String ip) {
