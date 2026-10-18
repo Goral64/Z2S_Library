@@ -1,0 +1,35 @@
+diff --git a/src/ESPUI.h b/src/ESPUI.h
+index 0c30126..dd089d5 100644
+--- a/src/ESPUI.h
++++ b/src/ESPUI.h
+@@ -11,7 +11,7 @@
+     #define AllocateJsonDocument(name, size)    JsonDocument name
+     #define AllocateJsonArray(doc, name)        doc[name].to<JsonArray>()
+     #define AllocateJsonObject(doc)             doc.add<JsonObject>()
+-    #define AllocateNamedJsonObject(t, s, n)    t[n] = s
++    #define AllocateNamedJsonObject(t, s, n)    t = s[n].to<JsonObject>()
+ #else
+     #define AllocateJsonDocument(name, size)    DynamicJsonDocument name(size)
+     #define AllocateJsonArray(doc, name)        doc.createNestedArray(name)
+diff --git a/src/ESPUIcontrol.cpp b/src/ESPUIcontrol.cpp
+index c5eabe1..d3197c7 100644
+--- a/src/ESPUIcontrol.cpp
++++ b/src/ESPUIcontrol.cpp
+@@ -447,7 +447,7 @@ bool BasicControl::MarshalControl(JsonObject & _item,
+     
+     bool ControlIsFragmented = false;
+     // create a new item in the response document
+-    JsonObject & item = _item;
++    JsonObject item = _item;
+ 
+ 
+     if (control_flags & CONTROL_FLAG_NUMERIC)
+@@ -592,7 +592,7 @@ bool LabelControl::MarshalControl(JsonObject & _item,
+ 
+     bool ControlIsFragmented = false;
+     // create a new item in the response document
+-    JsonObject & item = _item;
++    JsonObject item = _item;
+ 
+ 
+     if (control_flags & CONTROL_FLAG_NUMERIC)

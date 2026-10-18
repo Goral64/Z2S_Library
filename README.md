@@ -16,7 +16,7 @@ Good to know:
 - channels of a device moved from the gateway stay at the gateway in SUPLA Cloud until you delete them there; until then the gateway cannot register,
 - every separate device has its own TLS connection, so memory limits how many there can be; so far I have tried it with a few devices on ESP32-C6 with 8 MB flash. There is also a build for C6 with 4 MB flash, without OTA.
 
-This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn` (or `esp32c6_4MB_dyn`). The build script applies a small patch to supla-device (`core/supla-device-multidevice.patch`), the arduino-cli builds of the main branch don't have it.
+This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn` (or `esp32c6_4MB_dyn`). The build script applies small patches to supla-device (`core/supla-device-multidevice.patch`) and ESPUI (`core/espui-fragment.patch`, a crash of the web GUI with long labels), the arduino-cli builds of the main branch don't have them.
 
 Versions of this branch look like `Z2S_MD-1.6.93-1`: the Z2S version it is based on and the number of the multidevice release. This is what the gateway shows in the web GUI, in telnet (`VERSION`) and in SUPLA Cloud, also for the separate devices. Released firmware is on the [Releases](https://github.com/Goral64/Z2S_Library/releases) page of this fork, and the GitHub update in the web GUI of a multidevice gateway checks and downloads these releases, not the ones of the main project. The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**) on 8 MB, on 4 MB it goes at address 0x10000.
 
