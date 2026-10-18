@@ -49,6 +49,12 @@ bool Z2S_saveMultiDeviceIdentity(const z2s_md_identity_t *identity) {
                              sizeof(*identity));
 }
 
+bool Z2S_deleteMultiDeviceIdentity(const uint8_t ieee_addr[8]) {
+  char file_name[32];
+  identityFileName(ieee_addr, file_name, sizeof(file_name));
+  return Z2S_deleteFile(file_name);
+}
+
 void Z2S_newMultiDeviceIdentity(const uint8_t ieee_addr[8],
                                 z2s_md_identity_t *identity) {
   memset(identity, 0, sizeof(*identity));

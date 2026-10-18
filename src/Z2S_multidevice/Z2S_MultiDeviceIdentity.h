@@ -33,6 +33,7 @@ enum class Z2S_MultiDeviceIdentityResult { Loaded, Missing, Damaged };
 Z2S_MultiDeviceIdentityResult Z2S_loadMultiDeviceIdentity(
     const uint8_t ieee_addr[8], z2s_md_identity_t *identity);
 bool Z2S_saveMultiDeviceIdentity(const z2s_md_identity_t *identity);
+bool Z2S_deleteMultiDeviceIdentity(const uint8_t ieee_addr[8]);
 // Fills a new identity with random GUID and AuthKey.
 void Z2S_newMultiDeviceIdentity(const uint8_t ieee_addr[8],
                                 z2s_md_identity_t *identity);

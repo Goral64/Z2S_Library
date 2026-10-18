@@ -14,7 +14,8 @@ void Z2S_initMultiDevice(
 // "MULTIDEVICE NEW" says.
 void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot);
 /*****************************************************************************/
-// MULTIDEVICE [SEPARATE|GATEWAY <device slot>] [NEW GATEWAY|SEPARATE|ASK]
+// MULTIDEVICE [SEPARATE|GATEWAY|FORGET <device slot>]
+//             [NEW GATEWAY|SEPARATE|ASK]
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param);
 /*****************************************************************************/
 

@@ -369,6 +369,51 @@ static void Z2S_setMultiDeviceNewMode(char *mode_name) {
 
 /*****************************************************************************/
 
+// Deletes the identity file of a device using gateway channels (or with a
+// damaged file): when paired again, it is a new device for "MULTIDEVICE NEW".
+static void Z2S_forgetMultiDevice(uint8_t device_number_slot) {
+
+  if ((device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER) ||
+      (z2s_zb_devices_table[device_number_slot].record_id == 0)) {
+
+    telnet.printf("\n\r>Invalid device slot %u\n\r>", device_number_slot);
+    return;
+  }
+
+  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+
+  z2s_md_identity_t identity;
+
+  switch (Z2S_loadMultiDeviceIdentity(ieee_addr, &identity)) {
+
+    case Z2S_MultiDeviceIdentityResult::Missing:
+      telnet.printf("\n\r>Device #%u has no identity file\n\r>",
+                    device_number_slot);
+      return;
+
+    case Z2S_MultiDeviceIdentityResult::Loaded:
+      // The GUID of a separate device would be lost: a new device in Supla
+      // Cloud.
+      if (identity.mode != Z2S_MD_MODE_GATEWAY) {
+
+        telnet.printf(
+          "\n\r>Device #%u is not using gateway channels - not deleted\n\r>",
+          device_number_slot);
+        return;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  telnet.printf(
+    "\n\r>Identity file of device #%u %s\n\r>", device_number_slot,
+    Z2S_deleteMultiDeviceIdentity(ieee_addr) ? "deleted" : "not deleted");
+}
+
+/*****************************************************************************/
+
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
 
   if (params_number == 0) {
@@ -380,6 +425,12 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
   if ((strcasecmp(param[0], "NEW") == 0) && (params_number > 1)) {
 
     Z2S_setMultiDeviceNewMode(param[1]);
+    return;
+  }
+
+  if ((strcasecmp(param[0], "FORGET") == 0) && (params_number > 1)) {
+
+    Z2S_forgetMultiDevice(strtoul(param[1], nullptr, 0));
     return;
   }
 
@@ -398,7 +449,7 @@ void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param) {
   if (params_number < 2) {
 
     telnet.printf(
-      "\n\r>MULTIDEVICE [SEPARATE|GATEWAY <device slot>] "
+      "\n\r>MULTIDEVICE [SEPARATE|GATEWAY|FORGET <device slot>] "
       "[NEW GATEWAY|SEPARATE|ASK]\n\r>");
     return;
   }
