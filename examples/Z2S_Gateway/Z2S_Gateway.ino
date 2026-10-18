@@ -544,6 +544,11 @@ static int32_t parse_int(const char *s, size_t len) {
 
 void setup() {
 
+#if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
+  // Logs on native USB must not wait for a computer that does not read them.
+  Serial.setTxTimeoutMs(0);
+#endif
+
   log_i("Z2S GATEWAY setup has just started!");
 
   my_custom_heap = multi_heap_register(
