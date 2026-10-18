@@ -31,6 +31,58 @@ static const char *multiDevice3rdPartyCACert = nullptr;
 // by hand.
 static bool multiDeviceStarted = false;
 
+// Mode of each Zigbee device from its identity file (0xFF = damaged file).
+// The web GUI shows it every 10 s, so the file is read again only after it
+// changed or when another device took the slot.
+typedef struct z2s_md_mode_cache_s {
+  bool                read;
+  esp_zb_ieee_addr_t  ieee_addr;
+  uint8_t             mode;
+} z2s_md_mode_cache_t;
+
+static z2s_md_mode_cache_t multiDeviceModes[Z2S_ZB_DEVICES_MAX_NUMBER] = {};
+
+/*****************************************************************************/
+
+// After an identity file was saved or deleted.
+static void Z2S_forgetMultiDeviceModes() {
+
+  for (auto &cached_mode : multiDeviceModes)
+    cached_mode.read = false;
+}
+
+/*****************************************************************************/
+
+static uint8_t Z2S_getMultiDeviceMode(uint8_t device_number_slot) {
+
+  auto &cached_mode = multiDeviceModes[device_number_slot];
+  auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
+
+  if (cached_mode.read &&
+      (memcmp(cached_mode.ieee_addr, ieee_addr, sizeof(esp_zb_ieee_addr_t)) ==
+       0))
+    return cached_mode.mode;
+
+  z2s_md_identity_t identity;
+
+  switch (Z2S_loadMultiDeviceIdentity(ieee_addr, &identity)) {
+
+    case Z2S_MultiDeviceIdentityResult::Loaded:
+      cached_mode.mode = identity.mode;
+      break;
+    case Z2S_MultiDeviceIdentityResult::Damaged:
+      cached_mode.mode = 0xFF;
+      break;
+    default:
+      cached_mode.mode = Z2S_MD_MODE_GATEWAY;
+      break;
+  }
+  memcpy(cached_mode.ieee_addr, ieee_addr, sizeof(esp_zb_ieee_addr_t));
+  cached_mode.read = true;
+
+  return cached_mode.mode;
+}
+
 /*****************************************************************************/
 
 static Z2S_MultiDeviceLayer *Z2S_getMultiDeviceLayer() {
@@ -386,6 +438,7 @@ void Z2S_initMultiDevice(
         Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
         identity.mode = Z2S_MD_MODE_GATEWAY;
         Z2S_saveMultiDeviceIdentity(&identity);
+        Z2S_forgetMultiDeviceModes();
         break;
 
       default:
@@ -418,6 +471,8 @@ void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot) {
       Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
       identity.mode = Z2S_getMultiDeviceNewMode();
 
+      Z2S_forgetMultiDeviceModes();
+
       if (!Z2S_saveMultiDeviceIdentity(&identity))
         return;
 
@@ -445,6 +500,8 @@ void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot) {
   auto ieee_addr = z2s_zb_devices_table[device_number_slot].ieee_addr;
 
   z2s_md_identity_t identity;
+
+  Z2S_forgetMultiDeviceModes();
 
   if ((Z2S_loadMultiDeviceIdentity(ieee_addr, &identity) ==
        Z2S_MultiDeviceIdentityResult::Loaded) &&
@@ -513,24 +570,9 @@ static uint8_t Z2S_describeMultiDevice(
   char name[SUPLA_DEVICE_NAME_MAXSIZE];
   Z2S_getMultiDeviceName(device_number_slot, name, sizeof(name));
 
-  z2s_md_identity_t identity;
-  uint8_t mode = Z2S_MD_MODE_GATEWAY;
-  const char *mode_name = "gateway channels";
-
-  switch (Z2S_loadMultiDeviceIdentity(
-            z2s_zb_devices_table[device_number_slot].ieee_addr, &identity)) {
-
-    case Z2S_MultiDeviceIdentityResult::Loaded:
-      mode = identity.mode;
-      mode_name = Z2S_getMultiDeviceModeName(mode);
-      break;
-    case Z2S_MultiDeviceIdentityResult::Damaged:
-      mode = 0xFF;
-      mode_name = "identity file damaged";
-      break;
-    default:
-      break;
-  }
+  uint8_t mode = Z2S_getMultiDeviceMode(device_number_slot);
+  const char *mode_name = (mode == 0xFF) ?
+    "identity file damaged" : Z2S_getMultiDeviceModeName(mode);
   // Joined, but not interviewed: nothing to register yet.
   if ((mode != 0xFF) && Z2S_getMultiDeviceChannels(device_number_slot).empty())
     mode_name = "no channels";
@@ -621,6 +663,8 @@ static void Z2S_setMultiDeviceMode(
   uint8_t old_mode = identity.mode;
   identity.mode = mode;
 
+  Z2S_forgetMultiDeviceModes();
+
   if (!Z2S_saveMultiDeviceIdentity(&identity)) {
 
     snprintf(message, message_size, "Saving identity of device #%u failed",
@@ -681,6 +725,8 @@ static void Z2S_forgetMultiDevice(
     default:
       break;
   }
+
+  Z2S_forgetMultiDeviceModes();
 
   snprintf(
     message, message_size, "Identity file of device #%u %s",
