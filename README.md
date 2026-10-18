@@ -1,6 +1,25 @@
 # Zigbee <=> SUPLA Gateway
 This project is my personal attempt to build a gateway between various Zigbee end devices and SUPLA IoT ecosystem.
 
+## Multidevice branch
+This branch of my fork adds an experimental mode in which a paired Zigbee device can be a separate device in SUPLA Cloud, with its own GUID, AuthKey and connection, instead of a set of channels of the gateway. The gateway stays a normal SUPLA device with the rest of the channels.
+
+What it does:
+- each Zigbee device can be switched between gateway channels and a separate SUPLA device without restarting, in the Multidevice tab of the web GUI or with the telnet command `MULTIDEVICE [SEPARATE|GATEWAY|FORGET <slot>] [NEW GATEWAY|SEPARATE|ASK]`,
+- newly paired devices go to the gateway, become separate devices or wait for a choice (setting "New Zigbee devices"),
+- a separate device keeps its identity in the gateway's flash, so after pairing it again it comes back as the same device in SUPLA Cloud ("Forget identity" deletes it),
+- when a Zigbee device stops answering, its SUPLA device is disconnected and shows as offline: mains powered devices are pinged after 10 minutes of silence, battery devices are dropped after 25 hours without any message.
+
+Good to know:
+- the Multidevice tab has to be turned on in the Gateway tab under "Select GUI tabs" (restart needed) on gateways with a saved tab selection,
+- every separate device needs registration of new devices enabled in SUPLA Cloud and counts towards the device limit of the account,
+- channels of a device moved from the gateway stay at the gateway in SUPLA Cloud until you delete them there; until then the gateway cannot register,
+- every separate device has its own TLS connection, so memory limits how many there can be; so far I have tried it with a few devices on ESP32-C6 with 8 MB flash, and only that build is made.
+
+This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn`. The build script applies a small patch to supla-device (`core/supla-device-multidevice.patch`), the arduino-cli builds of the main branch don't have it.
+
+Firmware is built by GitHub Actions after every push: open [Build multidevice](https://github.com/Goral64/Z2S_Library/actions/workflows/multidevice.yml), pick the latest run and download the zip from Artifacts at the bottom of the page (you have to be logged in to GitHub). The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**).
+
 ## Table of Contents:
 
 1. [SUPLA - overview](#supla)
