@@ -965,8 +965,10 @@ static void Z2S_refreshMultiDeviceGUI(const char *message) {
 
   ESPUI.updateLabel(multiDeviceStatusLabel, status);
 
+  // As a String: a const char * value is kept as a pointer and message is a
+  // buffer of the caller.
   if (message)
-    ESPUI.updateLabel(multiDeviceMessageLabel, message);
+    ESPUI.updateLabel(multiDeviceMessageLabel, String(message));
 }
 
 /*****************************************************************************/
