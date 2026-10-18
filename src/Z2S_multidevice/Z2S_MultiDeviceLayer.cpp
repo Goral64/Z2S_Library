@@ -91,6 +91,11 @@ void Z2S_MultiDeviceLayer::rebuildChannelMap() {
   }
 }
 
+void Z2S_MultiDeviceLayer::setDeviceSuspended(uint32_t tag, bool suspended) {
+  int index = findDevice(tag);
+  if (index >= 0) devices_[index].session->setSuspended(suspended);
+}
+
 int Z2S_MultiDeviceLayer::findDevice(uint32_t tag) const {
   for (size_t d = 0; d < devices_.size(); d++) {
     if (devices_[d].tag == tag) return static_cast<int>(d);

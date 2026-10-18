@@ -19,6 +19,7 @@
 #include "z2s_version_info.h"
 #include "z2s_little_fs.h"
 #include "task_info.h"
+#include "z2s_multidevice.h"
 
 #include <SuplaDevice.h>
 #include <supla/storage/littlefs_config.h>
@@ -369,7 +370,8 @@ enum GuiBuildControlFlag : uint16_t {
 	GUI_BUILD_CONTROL_FLAG_TCC = 1 << 8,          // 0x0100
 	GUI_BUILD_CONTROL_FLAG_SB = 1 << 9,           // 0x0200
 	GUI_BUILD_CONTROL_FLAG_PO = 1 << 10,          // 0x0400
-	GUI_BUILD_CONTROL_FLAG_LAST = 1 << 11         // 0x8000
+	GUI_BUILD_CONTROL_FLAG_MD = 1 << 11,          // 0x0800
+	GUI_BUILD_CONTROL_FLAG_LAST = 1 << 12         // 0x8000
 };
 
 volatile uint8_t controls_enabled_flags = 0xFF;
@@ -1602,7 +1604,7 @@ void buildGatewayTabGUI() {
 
 	uint16_t gui_build_control_flags = _gui_build_flags ? _gui_build_flags : Z2S_getGUIBuildControlFlags((gui_modes_t)_enable_gui_on_start);
 
-	for (uint8_t gui_build_flag_bit = 1; gui_build_flag_bit < 11;
+	for (uint8_t gui_build_flag_bit = 1; gui_build_flag_bit < 12;
 	     gui_build_flag_bit++) {
 
 		ESPUI.addControl(
@@ -4834,6 +4836,8 @@ uint16_t Z2S_getGUIBuildControlFlags(gui_modes_t mode) {
 			}
 			break;
 	}
+	if (gui_build_control_flags & GUI_BUILD_CONTROL_FLAG_DEVICES)
+		gui_build_control_flags |= GUI_BUILD_CONTROL_FLAG_MD;
 	return gui_build_control_flags;
 }
 
@@ -4925,6 +4929,11 @@ void Z2S_buildWebGUI(gui_modes_t mode, uint32_t gui_custom_flags) {
 	if (gui_build_control_flags & GUI_BUILD_CONTROL_FLAG_SB) {
 
 		buildSwitchBotTabGUI();
+	}
+
+	if (gui_build_control_flags & GUI_BUILD_CONTROL_FLAG_MD) {
+
+		Z2S_buildMultiDeviceTabGUI();
 	}
 
 	//buildAllChannelSelectors();

@@ -147,7 +147,8 @@ static constexpr char* GUI_BUILD_FLAGS_NAMES[] PROGMEM = {
 	"Advanced Devices",
 	"Tuya custom cluster (0xEF00) devices",
 	"SwitchBot channels",
-	"Pushover"
+	"Pushover",
+	"Multidevice"
 };
 
 

@@ -24,5 +24,8 @@ void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot);
 //             [NEW GATEWAY|SEPARATE|ASK]
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param);
 /*****************************************************************************/
+// "Multidevice" tab of the web GUI.
+void Z2S_buildMultiDeviceTabGUI();
+/*****************************************************************************/
 
 #endif //Z2S_MULTIDEVICE_H_

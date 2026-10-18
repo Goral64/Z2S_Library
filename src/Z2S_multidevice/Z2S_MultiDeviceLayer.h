@@ -35,6 +35,9 @@ class Z2S_MultiDeviceLayer : public Supla::Protocol::ProtocolLayer,
   bool setDeviceChannels(uint32_t tag, const uint8_t *channels, int count);
   // The device's channels go back to the gateway.
   bool removeDevice(uint32_t tag);
+  // A suspended device is disconnected from Supla and does not connect (the
+  // Zigbee device is unreachable).
+  void setDeviceSuspended(uint32_t tag, bool suspended);
   // Index of a device, -1 when not added.
   int findDevice(uint32_t tag) const;
   int deviceCount() const { return static_cast<int>(devices_.size()); }
