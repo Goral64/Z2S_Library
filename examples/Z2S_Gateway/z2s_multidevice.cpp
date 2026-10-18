@@ -378,7 +378,11 @@ void Z2S_initMultiDevice(
 
       case Z2S_MultiDeviceIdentityResult::Missing:
         // A device paired before: its channels stay with the gateway. With
-        // the file, a missing one later means a newly paired device.
+        // the file, a missing one later means a newly paired device. A device
+        // without channels (joined, but not interviewed) is still new.
+        if (Z2S_getMultiDeviceChannels(devices_counter).empty())
+          break;
+
         Z2S_newMultiDeviceIdentity(ieee_addr, &identity);
         identity.mode = Z2S_MD_MODE_GATEWAY;
         Z2S_saveMultiDeviceIdentity(&identity);
@@ -527,6 +531,9 @@ static uint8_t Z2S_describeMultiDevice(
     default:
       break;
   }
+  // Joined, but not interviewed: nothing to register yet.
+  if ((mode != 0xFF) && Z2S_getMultiDeviceChannels(device_number_slot).empty())
+    mode_name = "no channels";
 
   int length = snprintf(
     buffer, buffer_size,
