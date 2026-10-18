@@ -20,6 +20,11 @@ void Z2S_onMultiDeviceChannelsBuilt(uint8_t device_number_slot);
 // comes back as the same Supla device.
 void Z2S_onMultiDeviceRemoved(uint8_t device_number_slot);
 /*****************************************************************************/
+// Version of the gateway: Z2S version without its date and the release of
+// the multidevice branch, e.g. "Z2S_MD-1.6.93-1" (it fits in the Supla
+// software version, Z2S_VERSION with its date does not).
+const char *Z2S_getMultiDeviceVersion();
+/*****************************************************************************/
 // MULTIDEVICE [SEPARATE|GATEWAY|FORGET <device slot>]
 //             [NEW GATEWAY|SEPARATE|ASK]
 void Z2S_onMultiDeviceTelnetCmd(uint8_t params_number, char **param);

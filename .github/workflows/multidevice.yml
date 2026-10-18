@@ -42,7 +42,9 @@ jobs:
       - name: Collect binaries
         id: collect
         run: |
-          VERSION=$(sed -n 's/#define Z2S_VERSION "Z2S-\([0-9.]*\)-.*"/\1/p' examples/Z2S_Gateway/z2s_version_info.h)
+          Z2S=$(sed -n 's/#define Z2S_VERSION "Z2S-\([0-9.]*\)-.*"/\1/p' examples/Z2S_Gateway/z2s_version_info.h)
+          MD=$(sed -n 's/#define Z2S_MULTIDEVICE_RELEASE \([0-9]*\).*/\1/p' examples/Z2S_Gateway/z2s_multidevice_version.h)
+          VERSION=MD-$Z2S-$MD
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           BUILD=.pio/build/${{ matrix.env }}
@@ -73,9 +75,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=${{ needs.build.outputs.version }}
-          TAG=multidevice-$VERSION-${{ github.run_number }}
-          gh release create $TAG out/*.bin --repo ${{ github.repository }} --prerelease --target ${{ github.sha }} \
-            --title "Multidevice $VERSION (build ${{ github.run_number }})" \
-            --notes "Experimental multidevice build for ESP32-C6, based on Z2S $VERSION.
+          # The gateway checks the latest release for updates, so every release
+          # needs a new Z2S_MULTIDEVICE_RELEASE.
+          gh release create $VERSION out/*.bin --repo ${{ github.repository }} --latest --target ${{ github.sha }} \
+            --title "Z2S_$VERSION" \
+            --notes "Experimental multidevice build for ESP32-C6, based on Z2S $(echo $VERSION | cut -d- -f2).
           full_version: flash at 0x0. update_only (8MB): OTA update of a gateway already running an 8 MB build.
           4MB: no OTA, update_only goes at 0x10000 over USB."

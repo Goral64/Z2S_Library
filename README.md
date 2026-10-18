@@ -18,7 +18,9 @@ Good to know:
 
 This branch builds with PlatformIO (pioarduino): `pio run -e esp32c6_8MB_dyn` (or `esp32c6_4MB_dyn`). The build script applies a small patch to supla-device (`core/supla-device-multidevice.patch`), the arduino-cli builds of the main branch don't have it.
 
-Firmware is built by GitHub Actions after every push: open [Build multidevice](https://github.com/Goral64/Z2S_Library/actions/workflows/multidevice.yml), pick the latest run and download the zip for your flash size from Artifacts at the bottom of the page (you have to be logged in to GitHub). The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**) on 8 MB, on 4 MB it goes at address 0x10000.
+Versions of this branch look like `Z2S_MD-1.6.93-1`: the Z2S version it is based on and the number of the multidevice release. This is what the gateway shows in the web GUI, in telnet (`VERSION`) and in SUPLA Cloud, also for the separate devices. Released firmware is on the [Releases](https://github.com/Goral64/Z2S_Library/releases) page of this fork, and the GitHub update in the web GUI of a multidevice gateway checks and downloads these releases, not the ones of the main project. The file `full_version` goes at address 0x0, `update_only` is for OTA (**gateway_IP/update**) on 8 MB, on 4 MB it goes at address 0x10000.
+
+Test builds of every push are in GitHub Actions: open [Build multidevice](https://github.com/Goral64/Z2S_Library/actions/workflows/multidevice.yml), pick a run and download the zip for your flash size from Artifacts at the bottom of the page (you have to be logged in to GitHub).
 
 ## Table of Contents:
 

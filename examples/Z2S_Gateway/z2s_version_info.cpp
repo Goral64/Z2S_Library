@@ -12,14 +12,17 @@
 #include <SuplaDevice.h>
 
 #include "z2s_version_info.h"
+#include "z2s_multidevice.h"
 
 /*****************************************************************************/
 
-const char *GITHUB_API_URL = "https://api.github.com/repos/lsroka76/"
+// Releases of the multidevice branch, not of Z2S.
+const char *GITHUB_API_URL = "https://api.github.com/repos/Goral64/"
 "Z2S_Library/releases/latest";
 
-const char* firmwareUrl = "https://github.com/lsroka76/Z2S_Library/"
-"releases/latest/download/Z2S_Gateway.8MB.OTA.no_logs.update_only.bin";
+const char* firmwareUrl = "https://github.com/Goral64/Z2S_Library/"
+"releases/latest/download/"
+"Z2S_Gateway.multidevice.8MB.OTA.logs.update_only.bin";
 
 /*****************************************************************************/
 
@@ -31,24 +34,25 @@ bool isVersionNewer(const char* current, const char* latest) {
 
     int currentMajor = 0, currentMinor = 0, currentPatch = 0;
     int latestMajor = 0, latestMinor = 0, latestPatch = 0;
+    int currentRelease = 0, latestRelease = 0;
   
-    if (sscanf(current, "Z2S-%d.%d.%d", &currentMajor, &currentMinor, 
-          &currentPatch) != 3) {
+    if (sscanf(current, "Z2S_MD-%d.%d.%d-%d", &currentMajor, &currentMinor, 
+          &currentPatch, &currentRelease) != 4) {
 
       log_e("Failed to parse local version.");
       return false;
     }
 
-    if (sscanf(latest, "v%d.%d.%d", &latestMajor, &latestMinor, 
-          &latestPatch) != 3) {
+    if (sscanf(latest, "MD-%d.%d.%d-%d", &latestMajor, &latestMinor, 
+          &latestPatch, &latestRelease) != 4) {
         
       log_e("Failed to parse GitHub version.");
       return false; 
     }
 
-    if (latestMajor != currentMajor) return latestMajor > currentMajor;
-    if (latestMinor != currentMinor) return latestMinor > currentMinor;
-    return latestPatch > currentPatch;
+    // Multidevice releases are counted on their own, whatever Z2S version
+    // they are based on.
+    return latestRelease > currentRelease;
 }
 
 /*****************************************************************************/
@@ -138,14 +142,16 @@ bool checkGitHubForUpdate(char *response_buffer, size_t response_buffer_size) {
           '"', latestTag, sizeof(latestTag) - 1);
         latestTag[len] = '\0';
                 
-        log_i("Current: %s | Latest: %s", Z2S_VERSION, latestTag);
+        log_i(
+          "Current: %s | Latest: %s", Z2S_getMultiDeviceVersion(), latestTag);
                 
-        if (isVersionNewer(Z2S_VERSION, latestTag)) {
+        if (isVersionNewer(Z2S_getMultiDeviceVersion(), latestTag)) {
 
           if (response_buffer)
           snprintf(
             response_buffer, response_buffer_size, "New GitHub firmware "
-            "found:<br>current: %s | latest: %s", Z2S_VERSION, latestTag);
+            "found:<br>current: %s | latest: %s", Z2S_getMultiDeviceVersion(),
+            latestTag);
 
           
           log_i("New firmware release found!");

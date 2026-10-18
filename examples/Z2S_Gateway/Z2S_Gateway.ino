@@ -692,7 +692,7 @@ void setup() {
   File verfile = LittleFS.open("/version.dat", "w");
 
   char ver_buffer[30];
-  sprintf(ver_buffer, "SV-%s", Z2S_VERSION);
+  sprintf(ver_buffer, "SV-%s", Z2S_getMultiDeviceVersion());
 
   verfile.println(ver_buffer);
 
@@ -964,7 +964,7 @@ void setup() {
   SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
   
   SuplaDevice.setName("Zigbee <=> Supla Gateway");
-  SuplaDevice.setSwVersion(Z2S_VERSION);
+  SuplaDevice.setSwVersion(Z2S_getMultiDeviceVersion());
   wifi.enableSSL(ENABLE_SSL);
 
   SuplaDevice.setAutomaticResetOnConnectionProblem(

@@ -1412,11 +1412,12 @@ void fillGatewayGeneralnformation(char *buf) {
 		  "</b></i> %u B <b>| <i>HeapSize:</b></i> %u B<br>"
 		  "<br><b><i>Supla Device SDK version:</i></b> <i>%s</i><br>"
 		  "<b><i>Supla GUID:</i></b> <i>%s</i><br><br>"
-		  "<b><i>Z2S Gateway version:</i></b> <i>%s</i><br><br>"
+		  "<b><i>Z2S Gateway version:</i></b> <i>%s (%s)</i><br><br>"
 		  "<b><i>Network extended PAN ID:</i></b> <i>%s</i><br>"
 		  "<b><i>Network current channel:</i></b> <i>%u</i><br><br>",
 		  ESP.getFlashChipSize(), ESP.getFreeSketchSpace(), ESP.getHeapSize(),
-		  suplaDeviceVersion, Supla_GUID_str, Z2S_VERSION, extended_pan_id_str,
+		  suplaDeviceVersion, Supla_GUID_str, Z2S_getMultiDeviceVersion(),
+		  Z2S_VERSION, extended_pan_id_str,
 		  esp_zb_get_current_channel());
 
 		log_i("Device information %s", buf);

@@ -530,7 +530,9 @@ void Z2S_onTelnetCmd(char *cmd, uint8_t params_number, char **param) {
   } else
   if (strcmp(cmd, "VERSION") == 0) {
 
-    telnet.printf("\n\r>Gateway version: %s\n\r>", Z2S_VERSION);
+    telnet.printf(
+      "\n\r>Gateway version: %s (%s)\n\r>", Z2S_getMultiDeviceVersion(),
+      Z2S_VERSION);
     return;
   } else
   if (strcmp(cmd, "TASKS") == 0) {

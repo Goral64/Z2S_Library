@@ -14,7 +14,9 @@
 #include <vector>
 
 #include "z2s_devices_table.h"
+#include "z2s_multidevice_version.h"
 #include "z2s_telnet_server.h"
+#include "z2s_version_info.h"
 #include "ZigbeeCore.h"
 #include "ZigbeeGateway.h"
 
@@ -30,6 +32,25 @@ static const char *multiDevice3rdPartyCACert = nullptr;
 // SuplaDevice.begin() was called: a layer created now has to be initialized
 // by hand.
 static bool multiDeviceStarted = false;
+
+/*****************************************************************************/
+
+const char *Z2S_getMultiDeviceVersion() {
+
+  static char version[SUPLA_SOFTVER_MAXSIZE] = "";
+
+  if (version[0] == '\0') {
+
+    // Looks like "Z2S-1.6.93-18/10/26".
+    const char *z2s_version = Z2S_VERSION + 4;
+    int length = strcspn(z2s_version, "-");
+
+    snprintf(
+      version, sizeof(version), "Z2S_MD-%.*s-%u", length, z2s_version,
+      Z2S_MULTIDEVICE_RELEASE);
+  }
+  return version;
+}
 
 /*****************************************************************************/
 
