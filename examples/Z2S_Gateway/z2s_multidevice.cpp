@@ -284,8 +284,84 @@ static bool Z2S_isMultiDeviceActive(uint8_t device_number_slot) {
   uint8_t power_source = 
     Z2S_getMultiDeviceZbDevice(device_number_slot)->getPowerSource() & 0x7F;
 
-  return (power_source != ZB_POWER_SOURCE_UNKNOWN) && 
+  return (power_source != ZB_POWER_SOURCE_UNKNOWN) &&
          (power_source != ZB_POWER_SOURCE_BATTERY);
+}
+
+/*****************************************************************************/
+
+// Z2S reads the power source (Basic cluster) only from Tuya devices, so for
+// most devices it is unknown. Then the node descriptor of the device tells
+// it: MAC capability bit 2 = mains powered. A sleepy device may not answer,
+// so it is asked again every 10 min.
+static const uint8_t  Z2S_MD_MAC_CAPABILITY_MAINS = 0x04;
+static const uint32_t Z2S_MD_NODE_DESC_RETRY_MS   = 10 * 60 * 1000;
+
+// When the node descriptor was last requested from each device.
+static uint32_t multiDeviceNodeDescMs[Z2S_ZB_DEVICES_MAX_NUMBER] = {};
+// The power source from the answer, set by the Zigbee task, 0 = none yet.
+static volatile uint8_t multiDeviceNodeDescPowerSource[
+  Z2S_ZB_DEVICES_MAX_NUMBER] = {};
+
+static void Z2S_multiDeviceNodeDescCallback(
+  esp_zb_zdp_status_t zdo_status, uint16_t short_addr,
+  esp_zb_af_node_desc_t *node_desc, void *user_ctx) {
+
+  uint8_t device_number_slot = (uint8_t)(uintptr_t)user_ctx;
+
+  if ((zdo_status != ESP_ZB_ZDP_STATUS_SUCCESS) || (node_desc == nullptr) ||
+      (device_number_slot >= Z2S_ZB_DEVICES_MAX_NUMBER))
+    return;
+
+  multiDeviceNodeDescPowerSource[device_number_slot] =
+    (node_desc->mac_capability_flags & Z2S_MD_MAC_CAPABILITY_MAINS) ?
+      ZB_POWER_SOURCE_MAINS : ZB_POWER_SOURCE_BATTERY;
+}
+
+// Called every second for each separate device.
+static void Z2S_checkMultiDevicePowerSource(uint8_t device_number_slot) {
+
+  auto device = Z2S_getMultiDeviceZbDevice(device_number_slot);
+
+  uint8_t power_source = multiDeviceNodeDescPowerSource[device_number_slot];
+
+  if (power_source != 0) {
+
+    multiDeviceNodeDescPowerSource[device_number_slot] = 0;
+
+    if ((device->getPowerSource() & 0x7F) == ZB_POWER_SOURCE_UNKNOWN) {
+
+      log_i(
+        "Multidevice: device #%u is %s powered", device_number_slot,
+        (power_source == ZB_POWER_SOURCE_MAINS) ? "mains" : "battery");
+      device->setPowerSource(power_source);
+    }
+    return;
+  }
+
+  if ((device->getPowerSource() & 0x7F) != ZB_POWER_SOURCE_UNKNOWN)
+    return;
+
+  if ((multiDeviceNodeDescMs[device_number_slot] != 0) &&
+      (millis() - multiDeviceNodeDescMs[device_number_slot] <
+         Z2S_MD_NODE_DESC_RETRY_MS))
+    return;
+
+  log_i(
+    "Multidevice: power source of device #%u unknown, asking for node "
+    "descriptor", device_number_slot);
+
+  esp_zb_zdo_node_desc_req_param_t node_desc_req = {};
+  node_desc_req.dst_nwk_addr = device->getDeviceShortAddress();
+
+  esp_zb_lock_acquire(portMAX_DELAY);
+  esp_zb_zdo_node_desc_req(
+    &node_desc_req, Z2S_multiDeviceNodeDescCallback,
+    (void *)(uintptr_t)device_number_slot);
+  esp_zb_lock_release();
+
+  // never 0, which means "not asked yet"
+  multiDeviceNodeDescMs[device_number_slot] = millis() | 1;
 }
 
 /*****************************************************************************/
@@ -427,6 +503,8 @@ public:
       if ((device_index < 0) ||
           (Z2S_getMultiDeviceZbDevice(devices_counter) == nullptr))
         continue;
+
+      Z2S_checkMultiDevicePowerSource(devices_counter);
 
       auto session = multiDeviceLayer->session(device_index);
       bool suspended = Z2S_isMultiDeviceUnreachable(
