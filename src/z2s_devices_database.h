@@ -82,6 +82,7 @@
 #define Z2S_DEVICE_DESC_TUYA_SOIL_SENSOR_5F                 0x1113
 
 #define Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE           0x1150
+#define Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE            0x1155
 
 #define Z2S_DEVICE_DESC_TUYA_ILLUMINANCE_SENSOR             0x1200
 #define Z2S_DEVICE_DESC_TUYA_ILLUZONE_SENSOR                0x1205
@@ -175,6 +176,7 @@
 #define Z2S_DEVICE_DESC_DIY_POWER_SOURCE_SENSOR             0x2620
 
 #define Z2S_DEVICE_DESC_GENERIC_ANALOG_SENSOR               0x2650
+#define Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR        0x2651
 
 
 #define Z2S_DEVICE_DESC_TUYA_WATER_LEVEL_SENSOR             0x2700
@@ -1619,6 +1621,14 @@ inline const z2s_device_desc_t Z2S_DEVICES_DESC[] PROGMEM [[maybe_unused]] = {
     .z2s_device_config_flags = 0x0,
     .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_ANALOG_OUTPUT }},
 
+  { .z2s_device_desc_id = Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR,
+    .z2s_device_clusters_count = 3,
+    .z2s_device_config_flags = 0x0,
+    .z2s_device_clusters = { 
+      ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+      ESP_ZB_ZCL_CLUSTER_ID_ANALOG_INPUT,
+      ESP_ZB_ZCL_CLUSTER_ID_BINARY_INPUT }},
+
   { .z2s_device_desc_id = Z2S_DEVICE_DESC_DIY_POWER_SOURCE_SENSOR,
     .z2s_device_clusters_count = 1,
     .z2s_device_config_flags = 0x0,
@@ -2556,6 +2566,12 @@ inline const z2s_device_desc_t Z2S_DEVICES_DESC[] PROGMEM [[maybe_unused]] = {
     .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
                              TUYA_PRIVATE_CLUSTER_EF00 }},
 
+  {	.z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .z2s_device_clusters_count = 2,
+    .z2s_device_config_flags = Z2S_DEVICE_DESC_CONFIG_FLAG_TUYA_INIT,
+    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+                             TUYA_PRIVATE_CLUSTER_EF00 }},
+
   {	.z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_ON_OFF_VALVE_BATTERY,
     .z2s_device_clusters_count = 2,
     .z2s_device_config_flags = Z2S_DEVICE_DESC_CONFIG_FLAG_TUYA_INIT,
@@ -3228,6 +3244,11 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 
   {	.manufacturer_name = "Wing", .model_name = "TS0201",
     .z2s_device_uid = 210,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TEMPHUMIDITY_SENSOR,
+	  .z2s_device_endpoints_count = 1 },
+
+  {	.manufacturer_name = "AoYan  ", .model_name = "TS0201",
+    .z2s_device_uid = 215,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TEMPHUMIDITY_SENSOR,
 	  .z2s_device_endpoints_count = 1 },
 
@@ -6698,6 +6719,11 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_REPEATER,
 	  .z2s_device_endpoints_count = 1},
 
+  {	.manufacturer_name = "_TZ3210_cmnwaylf", .model_name = "TS0501B",
+    .z2s_device_uid = 26455,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_REPEATER,
+	  .z2s_device_endpoints_count = 1},
+
   {	.manufacturer_name = "_TZE284_zm8zpwas", .model_name = "TS0601",
     .z2s_device_uid = 26500,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_ON_OFF_VALVE_BATTERY,
@@ -7519,8 +7545,19 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
   { .manufacturer_name = "SuplaDIY", .model_name = "GPM_5CH",
     .z2s_device_uid = 38200,
     .z2s_device_desc_id = Z2S_DEVICE_DESC_GENERIC_ANALOG_SENSOR,
-    .z2s_device_endpoints_count = 1,
+    .z2s_device_flags = Z2S_DEVICE_CONFIG_FLAG_EXT_ENDPOINTS,
+    .z2s_device_endpoints_count = 5,
     .z2s_device_endpoints_ext = SUPLADIY_GPM_5CH_ENDPOINTS },
+
+  { .manufacturer_name = "SuplaDIY", .model_name = "BIN_1CH_GPM_1CH",
+    .z2s_device_uid = 38205,
+    .z2s_device_desc_id = Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR,
+    .z2s_device_endpoints_count = 1},
+
+  { .manufacturer_name = "_TZE200_mubi1vi2", .model_name = "ZG-227ZP",
+    .z2s_device_uid = 38300,
+    .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .z2s_device_endpoints_count = 1},
 
   
 //DEVICES_END

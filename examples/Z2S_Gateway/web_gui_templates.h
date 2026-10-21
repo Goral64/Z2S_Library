@@ -585,8 +585,12 @@ inline constexpr Supla_action_type_t Supla_actions [] PROGMEM = {
 		.Supla_action_name = "TURN OFF GATEWAY SENSOR NOTIFICATIONS" },
 
 	{ .Supla_action_id = (Supla::Action)Z2S_SUPLA_ACTION_PUSHOVER_FIRST_ACTION,
-		.Supla_action_name = "SEND PUSHOVER MESSAGE (USE SUBACTION 0-256)",
-		.max_subactions_number = 256 }
+		.Supla_action_name = "SEND PUSHOVER MESSAGE (USE SUBACTION 0-255)",
+		.max_subactions_number = 256 },
+
+	{ .Supla_action_id = (Supla::Action)Z2S_SUPLA_ACTION_PLAY_MELODY,
+		.Supla_action_name = "PLAY MELODY (USE SUBACTION 0-31)",
+		.max_subactions_number = 32 }
 };
 
 inline constexpr Supla_event_type_t Supla_events [] PROGMEM = {
@@ -3530,22 +3534,155 @@ inline const Tuya_datapoint_desc_t Tuya_datapoints[] PROGMEM = {
     .Tuya_datapoint_id 		 			= TUYA_WATER_QUALITY_MONITOR_PROBE_TEMPERATURE_CALIBRATION_DP,
     .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
     .Tuya_datapoint_name 	 			= "Probe temperature calibration",
-    .Tuya_datapoint_description = "Enter numeric value between - 20 and 20"
+    .Tuya_datapoint_description = "Enter numeric value between -20 and 20"
 																	"<br> 1 = 0.1 °C"},
 
 	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_WATER_QUALITY_MONITOR,
     .Tuya_datapoint_id 		 			= TUYA_WATER_QUALITY_MONITOR_TEMPERATURE_CALIBRATION_DP,
     .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
     .Tuya_datapoint_name 	 			= "Temperature calibration",
-    .Tuya_datapoint_description = "Enter numeric value between - 200 and 200"
+    .Tuya_datapoint_description = "Enter numeric value between -200 and 200"
 																	"<br> 1 = 0.01 °C"},
 
 	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_WATER_QUALITY_MONITOR,
     .Tuya_datapoint_id 		 			= TUYA_WATER_QUALITY_MONITOR_HUMIDITY_CALIBRATION_DP,
     .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
     .Tuya_datapoint_name 	 			= "Humidity calibration",
-    .Tuya_datapoint_description = "Enter numeric value between - 1000 and 1000"
-																	"<br> 1 = 0.01 %"}
+    .Tuya_datapoint_description = "Enter numeric value between -1000 and 1000"
+																	"<br> 1 = 0.01 %"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .Tuya_datapoint_id 		 			= TUYA_TH_SENSOR_NTC_PROBE_NTC_TEMPERATURE_CALIBRATION_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "NTC probe temperature calibration",
+    .Tuya_datapoint_description = "Enter numeric value between -50 and 50"
+																	"<br> 1 = 0.1 °C"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .Tuya_datapoint_id 		 			= TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_CALIBRATION_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Temperature calibration",
+    .Tuya_datapoint_description = "Enter numeric value between -20 and 20"
+																	"<br> 1 = 0.1 °C"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .Tuya_datapoint_id 		 			= TUYA_TH_SENSOR_NTC_PROBE_HUMIDITY_CALIBRATION_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Humidity calibration",
+    .Tuya_datapoint_description = "Enter numeric value between -30 and 30"
+																	"<br> 1 = 1%"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .Tuya_datapoint_id 		 			= TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_SAMPLING_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Temperature sampling interval",
+    .Tuya_datapoint_description = "Enter numeric value between 5 and 3600 [s]" },
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
+    .Tuya_datapoint_id 		 			= TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_UNIT_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Temperature unit",
+    .Tuya_datapoint_description = "Enter numeric value:<br>"
+																	"0 => Celsius, 1 => Fahrenheit" },
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_230W,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_BACKLIGHT_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Backlight intensity (%)",
+    .Tuya_datapoint_description = "Enter numeric value between 0 and 100 [%]" },
+
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_230W,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_CONTROL_ALGORITHM_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Control alogrithm",
+    .Tuya_datapoint_description = 
+			"Enter numeric value:<br>"
+			"0 => TPI_UFH<br>"
+      "1 => TPI_RAD<br>"
+    	"2 => TPI_ELE<br>"
+      "3 => HIS_02<br>"
+      "4 => HIS_04<br>"
+    	"5 => HIS_06<br>"
+      "6 => HIS_08<br>"
+      "7 => HIS_10<br>"
+      "8 => HIS_20<br>"
+      "9 => HIS_30<br>"
+      "10 => HIS_40<br>"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_230W,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_COMFORT_FLOOR_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Comfort floor",
+    .Tuya_datapoint_description = 
+			"Enter numeric value:<br>"
+			"0 => OFF<br>"
+      "1 => LEVEL 1<br>"
+    	"2 => LEVEL 2<br>"
+      "3 => LEVEL 3<br>"
+      "4 => LEVEL 4<br>"
+    	"5 => LEVEL 5<br>" },
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_BATB,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_BACKLIGHT_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Backlight intensity (%)",
+    .Tuya_datapoint_description = "Enter numeric value between 10 and 100 with step 10 [%]" },
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_BATB,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_CONTROL_ALGORITHM_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Control alogrithm",
+    .Tuya_datapoint_description = 
+			"Enter numeric value:<br>"
+			"0 => TPI_UFH<br>"
+      "1 => TPI_RAD<br>"
+    	"2 => TPI_ELE<br>"
+      "3 => HIS_02<br>"
+      "4 => HIS_04<br>"
+    	"5 => HIS_06<br>"
+      "6 => HIS_08<br>"
+      "7 => HIS_10<br>"
+      "8 => HIS_20<br>"
+      "9 => HIS_30<br>"
+      "10 => HIS_40<br>"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_E40,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_BACKLIGHT_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_VALUE,
+    .Tuya_datapoint_name 	 			= "Backlight intensity (%)",
+    .Tuya_datapoint_description = "Enter numeric value between 0 and 100 with step 10 [%]" },
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_E40,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_230W_CONTROL_ALGORITHM_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Control alogrithm",
+    .Tuya_datapoint_description = 
+			"Enter numeric value:<br>"
+			"0 => TPI_UFH<br>"
+      "1 => TPI_RAD<br>"
+    	"2 => TPI_ELE<br>"
+      "3 => HIS_02<br>"
+      "4 => HIS_04<br>"
+    	"5 => HIS_06<br>"
+      "6 => HIS_08<br>"
+      "7 => HIS_10<br>"
+      "8 => HIS_20<br>"
+      "9 => HIS_30<br>"
+      "10 => HIS_40<br>"},
+
+	{ .z2s_device_desc_id 	 			= Z2S_DEVICE_DESC_TS0601_EONE_E40,
+    .Tuya_datapoint_id 		 			= ENGO_EONE_E40_COMFORT_FLOOR_DP,
+    .Tuya_datapoint_type 				= TUYA_DP_TYPE_ENUM,
+    .Tuya_datapoint_name 	 			= "Comfort floor",
+    .Tuya_datapoint_description = 
+			"Enter numeric value:<br>"
+			"0 => OFF<br>"
+      "1 => LEVEL 1<br>"
+    	"2 => LEVEL 2<br>"
+      "3 => LEVEL 3<br>"
+      "4 => LEVEL 4<br>"
+    	"5 => LEVEL 5<br>" }
 };
 
 #endif //WEB_GUI_TEMPLATES_H_

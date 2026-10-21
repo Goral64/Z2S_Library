@@ -522,6 +522,17 @@
 #define TUYA_TH_SENSOR_TEMP_PROBE_BATTERY_STATE_DP                  0x03
 #define TUYA_TH_SENSOR_TEMP_PROBE_EXTERNAL_TEMPERATURE_DP           0x26 //x10
 
+#define TUYA_TH_SENSOR_NTC_PROBE_INTERNAL_TEMPERATURE_DP            0x01 //x10
+#define TUYA_TH_SENSOR_NTC_PROBE_INTERNAL_HUMIDITY_DP               0x02
+#define TUYA_TH_SENSOR_NTC_PROBE_BATTERY_LEVEL_DP                   0x04
+#define TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_SAMPLING_DP            0x06
+#define TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_UNIT_DP                0x09
+#define TUYA_TH_SENSOR_NTC_PROBE_TEMPERATURE_CALIBRATION_DP         0x17 //x10
+#define TUYA_TH_SENSOR_NTC_PROBE_HUMIDITY_CALIBRATION_DP            0x18
+#define TUYA_TH_SENSOR_NTC_PROBE_NTC_TEMPERATURE_CALIBRATION_DP     0x68 //x10
+#define TUYA_TH_SENSOR_NTC_PROBE_NTC_TEMPERATURE_DP                 0x69 //x10
+
+
 #define TUYA_ZM35HQ_BATTERY_DP                                      0x04
 
 #define TUYA_RGBWCT_LED_EF00_SWITCH_DP                              0x01 //BOOL
@@ -541,6 +552,13 @@
 #define TUYA_TS0601_TRV_TRV602Z_FROST_PROTECTION_DP                 0x7A
 
 #define TUYA_TS0601_TRV_TRV602Z_HYSTERESIS_DP                       0x7F
+
+#define ENGO_EONE_230W_TEMPERATURE_RESOLUTION_DP                    0x12
+#define ENGO_EONE_230W_BACKLIGHT_DP                                 0x23
+#define ENGO_EONE_230W_CONTROL_ALGORITHM_DP                         0x65
+#define ENGO_EONE_230W_COMFORT_FLOOR_DP                             0x76
+
+#define ENGO_EONE_E40_COMFORT_FLOOR_DP                              0x2D
 
 #define TUYA_DIN_RCBO_EM_SWITCH_DP                                  0x01
 #define TUYA_DIN_RCBO_EM_ENERGY_DP                                  0x11 // /100

@@ -2244,19 +2244,29 @@ void Z2S_onTemperatureReceive(
         "0x%04X, endpoint 0x%x, temperature %f", short_addr, endpoint, 
         temperature);
 
-      Supla::Element* element = Z2S_findZ2SElement(
-        short_addr, endpoint, cluster, SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR,
-        NO_CUSTOM_CMD_SID);
+      Z2S_Core *z2s_core = Z2S_findZ2SCore(
+        short_addr, endpoint, cluster, 
+        SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR, NO_CUSTOM_CMD_SID);
+  
 
-      if (!element)
-        element = Z2S_findZ2SElement(
-          short_addr, endpoint, cluster, SUPLA_CHANNELTYPE_THERMOMETER, 
+      if (!z2s_core)
+        z2s_core = Z2S_findZ2SCore(
+          short_addr, endpoint, cluster, SUPLA_CHANNELTYPE_THERMOMETER,
           NO_CUSTOM_CMD_SID);
 
-      if (!element) 
+      if (!z2s_core) 
         no_channel_found_error_func(short_addr);
-      else
-        msgZ2SDeviceTempHumidityTemp(element, temperature);
+      else {
+
+        if (z2s_core->getChannelModelId() == 
+            Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE) {
+          //skip 
+          return;
+        }
+
+        msgZ2SDeviceTempHumidityTemp(
+          z2s_core->getZ2SElementPtr(), temperature);
+      }
     } break;
   }
 }
@@ -4774,7 +4784,8 @@ void Z2S_onBinaryInputReceive(
 
 
         case Z2S_DEVICE_DESC_DIY_BATTERY_CHARGING_SENSOR:
-        case Z2S_DEVICE_DESC_DIY_POWER_SOURCE_SENSOR: {
+        case Z2S_DEVICE_DESC_DIY_POWER_SOURCE_SENSOR:
+        case Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR: {
 
           Supla::Element* element = Z2S_findZ2SElement(
             short_addr, endpoint, cluster, SUPLA_CHANNELTYPE_BINARYSENSOR, 
@@ -5048,7 +5059,8 @@ void Z2S_onAnalogInputReceive(
         } break;
 
 
-        case Z2S_DEVICE_DESC_DIY_BATTERY_CHARGING_SENSOR: {
+        case Z2S_DEVICE_DESC_DIY_BATTERY_CHARGING_SENSOR:
+        case Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR: {
 
           Supla::Element* element = Z2S_findZ2SElement(
             short_addr, endpoint, cluster, 
@@ -6908,7 +6920,8 @@ uint8_t Z2S_addZ2SDevice(
 
 /*****************************************************************************/
 
-      case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE: {
+      case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE:
+      case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE: {
 
         switch (sub_id) {
 
@@ -8400,6 +8413,27 @@ case Z2S_DEVICE_DESC_LUMI_W500: {
 
 /******************************************************************************/
 
+      case Z2S_DEVICE_DESC_GENERIC_BINARY_ANALOG_SENSOR: {
+        
+        addZ2SDeviceIASzone(
+          device, first_free_slot, NO_CUSTOM_CMD_SID, "BINARY OUTPUT", 
+          SUPLA_CHANNELFNC_BINARY_SENSOR); 
+
+        first_free_slot = Z2S_findFirstFreeChannelsTableSlot();
+
+        if (first_free_slot == 0xFF) {
+
+          devices_table_full_error_func();
+          return ADD_Z2S_DEVICE_STATUS_DT_FWA;
+        }
+      
+      addZ2SDeviceGeneralPurposeMeasurement(
+        device, first_free_slot, NO_CUSTOM_CMD_SID, "ANALOG OUTPUT", 
+        SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT, "");      
+    } break;
+
+/******************************************************************************/
+
       case Z2S_DEVICE_DESC_GENERIC_ANALOG_SENSOR: {
         
       addZ2SDeviceGeneralPurposeMeasurement(
@@ -9545,6 +9579,7 @@ bool hasTuyaCustomCluster(uint32_t model_id) {
     case Z2S_DEVICE_DESC_TUYA_4_RELAYS_DP_CONTROLLER:
     case Z2S_DEVICE_DESC_TUYA_5_RELAYS_CONTROLLER:
     case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE:
+    case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE:
     case Z2S_DEVICE_DESC_TUYA_RGBWCT_LED_EF00:
     case Z2S_DEVICE_DESC_TUYA_DP_RELAY:
     case Z2S_DEVICE_DESC_TUYA_SMART_POOL_SENSOR:
@@ -11333,7 +11368,8 @@ void Z2S_buildSuplaChannels(
 
 /*****************************************************************************/
 
-    case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE: {
+    case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_TEMP_PROBE:
+    case Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE: {
             
       Z2S_addZ2SDevice(
         joined_device, TUYA_TH_SENSOR_TEMP_PROBE_INTERNAL_TH_SID, 

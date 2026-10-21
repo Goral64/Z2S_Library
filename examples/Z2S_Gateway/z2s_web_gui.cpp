@@ -850,11 +850,33 @@ function updateActionTable(data) {
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       /* Base container styling with fixed height & scroll containment */
+      /* Container supporting dual vertical and horizontal scrolling */
       #${data.target} div[tabindex="0"] {
-        height: 140px;
-        overflow-y: auto;
+        height: 210px;
+        overflow: auto; /* Enables horizontal scrollbar when width < 720px */
         overscroll-behavior: contain;
+        margin-top: 8px; 
+        border: 1px solid rgba(128, 128, 128, 0.25);
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      }
+
+      /* Compact Slim Scrollbars for WebKit browsers */
+      #${data.target} div[tabindex="0"]::-webkit-scrollbar {
+        width: 6px;
+        height: 6px; /* Horizontal scrollbar height */
+      }
+      #${data.target} div[tabindex="0"]::-webkit-scrollbar-track {
+        background: rgba(128, 128, 128, 0.1);
+        border-radius: 4px;
+      }
+      #${data.target} div[tabindex="0"]::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 128, 0.35);
+        border-radius: 4px;
+      }
+      #${data.target} div[tabindex="0"]::-webkit-scrollbar-thumb:hover {
+        background: rgba(128, 128, 128, 0.55);
       }
 
       /* Keyboard focus glow state (kept intact) */
@@ -865,49 +887,95 @@ function updateActionTable(data) {
       }
       }
       #${data.target} .table-footer-hints {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        justify-content: center;
-        align-items: center;
-        background: #f8f9fa;
-        border: 1px solid #ccc;
-        border-top: none;
-        border-bottom-left-radius: 4px;
-        border-bottom-right-radius: 4px;
-        padding: 5px 10px;
-        font-size: 0.75rem;
-        color: #6c757d;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 14px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-top: none !important;
+        border-bottom-left-radius: 6px !important;
+        border-bottom-right-radius: 6px !important;
+        padding: 5px 10px !important;
+        font-size: 10px !important; /* Overrides ESPUI's ~14px body font on plain text */
+        line-height: 1 !important;
+        color: #cbd5e1 !important;
+        user-select: none !important;
+      }
+
+      /* Text + Keycap Groupings */
+      #${data.target} .table-footer-hints span {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        font-size: 10px !important; /* Strictly enforces 10px on text nodes like "Navigate" */
+        line-height: 1 !important;
+      }
+
+      /* Keycap Styling */
+      #${data.target} .table-footer-hints kbd {
+        background-color: #334155 !important;
+        border: 1px solid #475569 !important;
+        border-radius: 3px !important;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.4) !important;
+        color: #f8fafc !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-family: inherit !important;
+        font-size: 9px !important;
+        font-weight: 600 !important;
+        padding: 2px 4px !important;
+        line-height: 1 !important;
+        height: 16px !important;
+      }
+			/* Disabled Overlay & Input Lock */
+      #${data.target} div.table-disabled {
+        pointer-events: none !important;   /* Blocks mouse clicks, hover, and wheel scrolling */
+        overflow-y: hidden !important;     /* Locks scrollbar in place */
+        opacity: 0.5 !important;           /* Visual disabled state */
+        filter: grayscale(50%);
         user-select: none;
       }
-      #${data.target} .table-footer-hints kbd {
-        background-color: #ffffff;
-        border: 1px solid #adb5bd;
-        border-radius: 3px;
-        box-shadow: 0 1px 1px rgba(0,0,0,0.15);
-        color: #333;
+			/* Status Badge Styles */
+      #${data.target} .table-status-badge {
         display: inline-block;
-        font-family: inherit;
+        padding: 2px 8px;
+        border-radius: 12px;
         font-size: 0.7rem;
         font-weight: 600;
-        padding: 1px 4px;
-        margin: 0 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+      }
+      #${data.target} .badge-active {
+        background-color: #e6f4ea;
+        color: #137333;
+        border: 1px solid #ceedd5;
+      }
+      #${data.target} .badge-locked {
+        background-color: #fce8e6;
+        color: #c5221f;
+        border: 1px solid #f5c6cb;
       }
     </style>`;
 
-    // 4. Construct Scrollable Table Container
-    html += "<div tabindex='0' style='height: 140px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #ccc; border-top-left-radius: 4px; border-top-right-radius: 4px;'>" +
-      "<table style='width:100%; table-layout: fixed; border-collapse: collapse; text-align: left;'>" +
+    // Scrollable Table Container with Horizontal & Vertical Scroll
+    html += "<div tabindex='0' style='height: 210px; margin-top: 8px; overflow: auto; overscroll-behavior: contain; border: 1px solid rgba(128,128,128,0.25); border-top-left-radius: 6px; border-top-right-radius: 6px;'>" +
+      "<table style='width:100%; min-width: 720px; table-layout: fixed; border-collapse: collapse; text-align: left;'>" +
       "<thead><tr>" +
-      "<th style='padding: 6px; width: 30%;'>Name</th>" +
-      "<th style='padding: 6px; width: 15%;'>Trig</th>" +
-      "<th style='padding: 6px; width: 15%;'>Src</th>" +
-      "<th style='padding: 6px; width: 20%;'>Act</th>" +
-      "<th style='padding: 6px; width: 20%;'>Dest</th>" +
+      "<th style='padding: 6px; width: 130px; min-width: 130px;'>Name (enabled)</th>" +
+      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Supla event</th>" +
+      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Source channel</th>" +
+      "<th style='padding: 6px; width: 140px; min-width: 140px;'>Supla action</th>" +
+      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Destination channel</th>" +
       "</tr></thead><tbody>" + rowsHtml + "</tbody></table></div>";
 
     // 5. Footer Hotkey Legend
+    // Footer Bar with Hotkey Legend + Status Badge
     html += `<div class="table-footer-hints">
+      <span><span class="table-status-badge badge-active">Active</span></span>
       <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
       <span><kbd>PgUp</kbd><kbd>PgDn</kbd> ±5 Rows</span>
       <span><kbd>Home</kbd><kbd>End</kbd> First/Last</span>
@@ -991,6 +1059,34 @@ function updateActionTable(data) {
   }
 }
 
+function setTableDisabled(targetId, isDisabled) {
+  const targetLabel = document.getElementById(targetId);
+  if (!targetLabel) return;
+
+  const container = targetLabel.querySelector("div[tabindex]");
+  const badge = targetLabel.querySelector(".table-status-badge");
+
+  if (isDisabled) {
+    if (container) {
+      container.classList.add("table-disabled");
+      container.setAttribute("tabindex", "-1"); // Disable keyboard nav
+      container.blur();
+    }
+    if (badge) {
+      badge.textContent = "Locked";
+      badge.className = "table-status-badge badge-locked";
+    }
+  } else {
+    if (container) {
+      container.classList.remove("table-disabled");
+      container.setAttribute("tabindex", "0");  // Enable keyboard nav
+    }
+    if (badge) {
+      badge.textContent = "Active";
+      badge.className = "table-status-badge badge-active";
+    }
+  }
+}
 
 function highlightActionRow(data) {
   const targetLabel = document.getElementById(data.target);
@@ -1184,20 +1280,20 @@ const originalButtonClick = window.buttonclick;
 
 window.buttonclick = function(number, isdown) {
   
-  if (number == 57) {
+  if (number == 56) {
     if (isdown) return;
     
-    backupAndContinue("btn57");
+    backupAndContinue("btn56");
     return; 
   }
 
-  if (number == 53) {
+  if (number == 52) {
     if (isdown) return;
-    backupAndRedirectToOTA("btn53");
+    backupAndRedirectToOTA("btn52");
     return;
   }
 
-  if (number == 54) {
+  if (number == 53) {
     if (isdown) return;
     redirect2ZigbeeOTA();
     return;
@@ -1310,12 +1406,15 @@ void onWsConnectCallback() {
 	new_connect = true;
 }
 
+/*****************************************************************************/
+
 static const char *json_payload_fmt =
   "{\"type\":\"EXEC_JS\",\"code\":\" %s \"}";
 
+	
 void sendJSToWebsocket(char *jsCode) {
 
-	char json_payload[1024];
+	char json_payload[256];
 
 	snprintf(json_payload, sizeof(json_payload), json_payload_fmt, jsCode);
 
@@ -4363,6 +4462,22 @@ void sendActionRowEdit(uint16_t ui_label_id, int target_action_index) {
 }
 
 /*****************************************************************************/
+	
+void enableActionsTable(bool enable) {
+
+	char json_payload[256];
+
+	snprintf(
+		json_payload, sizeof(json_payload), 
+		"{\"type\":\"EXEC_JS\",\"code\":\" setTableDisabled('id%u', %s); \"}", 
+		actions_table_label_2, enable ? "false" : "true");
+
+	log_i("size %u, %s", strlen(json_payload), json_payload);
+
+	ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+}
+
+/*****************************************************************************/
 
 bool buildSelectJsonPreamble(
   char *json_payload, size_t json_payload_size, size_t &offset, bool clear,
@@ -5811,6 +5926,7 @@ void Z2S_loopWebGUI() {
 
 					sendActionRowEdit(
 						actions_table_label_2, pending_gui_command->gui_command_value);
+					enableActionsTable(true);
 			} break;
 
 
@@ -5818,6 +5934,7 @@ void Z2S_loopWebGUI() {
 					
 				buildActionsTableJsonPayload(
 					actions_table_label_2, pending_gui_command->gui_command_value);
+				enableActionsTable(true);
 			} break;
 
 
@@ -9431,8 +9548,6 @@ void advancedDeviceSelectorCallback(
       enableMoesAlarmGUI(false);
     return;
   }
-	else
-		return;
 
   log_i("sender_value %d", sender_value);
 
@@ -9943,6 +10058,7 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 					enableActionDetails(true);
 					updateActionDetails(new_action);
 					updateActionButtons();
+					enableActionsTable(false);
 				}
 				break;
 
@@ -9967,6 +10083,7 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 					enableActionDetails(true);
 					updateActionDetails(new_action);
 					updateActionButtons();
+					enableActionsTable(false);
 				}
 				break;
 
@@ -9992,6 +10109,7 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 						enableActionDetails(true);
 						updateActionButtons();
 						updateActionDetails(new_action, true);
+						enableActionsTable(false);
 					}
 				}
 				break;
@@ -10155,6 +10273,7 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 					enableActionControls(true);
 					updateActionButtons();
 					ESPUI.updateLabel(action_state_label, "Changes cancelled!");
+					enableActionsTable(true);
 				}
 				break;
 
