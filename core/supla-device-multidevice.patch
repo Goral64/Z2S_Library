@@ -1,11 +1,11 @@
 Channels registered in Supla by another device (multidevice mode).
-Base: lsroka76/supla-device d470d462a7bd84675ebb95601a78151f9a053b5d
+Base: lsroka76/supla-device 4f647a8bacb26872925998d0e448f477a89c353f
 
 diff --git a/src/supla/channels/channel.cpp b/src/supla/channels/channel.cpp
-index 2b932a34..c39d12b0 100644
+index 1da11da2..42bad83b 100644
 --- a/src/supla/channels/channel.cpp
 +++ b/src/supla/channels/channel.cpp
-@@ -82,7 +82,9 @@ Channel::Channel(int number) {
+@@ -87,7 +87,9 @@ Channel::Channel(int number) {
  }
  
  Channel::~Channel() {
@@ -16,7 +16,7 @@ index 2b932a34..c39d12b0 100644
    if (initialCaption != nullptr) {
      delete[] initialCaption;
      initialCaption = nullptr;
-@@ -1766,6 +1768,22 @@ void Channel::setSubDeviceId(uint8_t subDeviceId) {
+@@ -1769,6 +1771,22 @@ void Channel::setSubDeviceId(uint8_t subDeviceId) {
    this->subDeviceId = subDeviceId;
  }
  
@@ -40,7 +40,7 @@ index 2b932a34..c39d12b0 100644
    return subDeviceId;
  }
 diff --git a/src/supla/channels/channel.h b/src/supla/channels/channel.h
-index 8ac45ce2..d4f47e89 100644
+index 7fd7a565..d67ab2d4 100644
 --- a/src/supla/channels/channel.h
 +++ b/src/supla/channels/channel.h
 @@ -351,6 +351,18 @@ class Channel : public LocalAction {
@@ -62,7 +62,7 @@ index 8ac45ce2..d4f47e89 100644
    bool isRollerShutterRelayType() const;
    void setRelayOvercurrentCutOff(bool value);
    bool isRelayOvercurrentCutOff() const;
-@@ -405,6 +417,7 @@ class Channel : public LocalAction {
+@@ -411,6 +423,7 @@ class Channel : public LocalAction {
    uint8_t state = 0;
    uint8_t defaultIcon = 0;
    uint8_t subDeviceId = 0;
@@ -71,10 +71,10 @@ index 8ac45ce2..d4f47e89 100644
    union {
      int8_t value[SUPLA_CHANNELVALUE_SIZE] = {};
 diff --git a/src/supla/device/register_device.cpp b/src/supla/device/register_device.cpp
-index 5ec950e4..a27dc0d5 100644
+index 316d0814..36edd34b 100644
 --- a/src/supla/device/register_device.cpp
 +++ b/src/supla/device/register_device.cpp
-@@ -73,12 +73,7 @@ int Supla::RegisterDevice::getChannelNumber(int index) {
+@@ -58,12 +58,7 @@ int Supla::RegisterDevice::getChannelNumber(int index) {
      return -1;
    }
  
@@ -88,7 +88,7 @@ index 5ec950e4..a27dc0d5 100644
    if (ch == nullptr) {
      return -1;
    }
-@@ -106,6 +101,42 @@ uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
+@@ -91,6 +86,42 @@ uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
  
  #endif
  
@@ -131,7 +131,7 @@ index 5ec950e4..a27dc0d5 100644
  int Supla::RegisterDevice::getMaxChannelNumberUsed() {
    int max = -1;
    for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
-@@ -127,9 +158,9 @@ TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
+@@ -112,9 +143,9 @@ TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
      return nullptr;
    }
  
@@ -143,8 +143,8 @@ index 5ec950e4..a27dc0d5 100644
 +    return nullptr;
    }
  
-   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_D);
-@@ -142,9 +173,9 @@ TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
+   if (channel == nullptr) {
+@@ -131,9 +162,9 @@ TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
      return nullptr;
    }
  
@@ -156,12 +156,12 @@ index 5ec950e4..a27dc0d5 100644
 +    return nullptr;
    }
  
-   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_E);
+   if (channel == nullptr) {
 diff --git a/src/supla/device/register_device.h b/src/supla/device/register_device.h
-index e89e9aae..88778146 100644
+index ab4c1f93..fb4c57a7 100644
 --- a/src/supla/device/register_device.h
 +++ b/src/supla/device/register_device.h
-@@ -24,6 +24,8 @@
+@@ -9,6 +9,8 @@
  #include <stdint.h>
  
  namespace Supla {
@@ -170,7 +170,7 @@ index e89e9aae..88778146 100644
  namespace RegisterDevice {
  
  TDS_SuplaRegisterDeviceHeader *getRegDevHeaderPtr();
-@@ -81,6 +83,12 @@ void addChannel(int channelNumber);
+@@ -68,6 +70,12 @@ void addChannel(int channelNumber);
  void removeChannel(int channelNumber);
  int getChannelCount();
  int getMaxChannelNumberUsed();
@@ -184,10 +184,10 @@ index e89e9aae..88778146 100644
  void generateHttpAgent(char *buffer, int size);
  
 diff --git a/src/supla/protocol/supla_srpc.cpp b/src/supla/protocol/supla_srpc.cpp
-index 1695c86d..50404ebb 100644
+index bc4f7a92..a70df570 100644
 --- a/src/supla/protocol/supla_srpc.cpp
 +++ b/src/supla/protocol/supla_srpc.cpp
-@@ -47,6 +47,15 @@ struct CalCfgResultPendingItem {
+@@ -40,6 +40,15 @@ struct CalCfgResultPendingItem {
  
  bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
  
@@ -202,8 +202,8 @@ index 1695c86d..50404ebb 100644
 +
  static const char wrongCert[] = "SUPLA";
  
- Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
-@@ -573,17 +582,17 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
+ namespace {
+@@ -1789,17 +1798,17 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
    bool hasConflictChannelMissingOnServer = false;
    bool hasConflictChannelMissingOnDevice = false;
    if (registerDeviceResultB->channel_report_size <
@@ -224,7 +224,7 @@ index 1695c86d..50404ebb 100644
        SUPLA_LOG_WARNING(
            "Channel[%d]: is present on device, but missing on server side", i);
        hasConflictChannelMissingOnServer = true;
-@@ -592,7 +601,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
+@@ -1808,7 +1817,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
  
      if ((registerDeviceResultB->channel_report[i] &
           CHANNEL_REPORT_CHANNEL_REGISTERED) &&
@@ -233,7 +233,7 @@ index 1695c86d..50404ebb 100644
        SUPLA_LOG_ERROR(
            "Channel[%d]: is registered on server side, but missing on device",
            i);
-@@ -652,6 +661,12 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
+@@ -1873,6 +1882,12 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
  
        for (auto element = Supla::Element::begin(); element != nullptr;
             element = element->next()) {
@@ -246,17 +246,16 @@ index 1695c86d..50404ebb 100644
          element->onRegistered(this);
          delay(0);
        }
-@@ -1170,6 +1185,9 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
+@@ -2504,7 +2519,7 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
  
  void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
                                                          uint8_t channelNo) {
-+  if (isExternalChannel(channelNo)) {
-+    return;
-+  }
+-  if (client == nullptr) {
++  if (client == nullptr || isExternalChannel(channelNo)) {
+     return;
+   }
    TDSC_ChannelState state = {};
-   state.ReceiverID = receiverId;
-   state.ChannelNumber = channelNo;
-@@ -1213,7 +1231,7 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
+@@ -2555,7 +2570,7 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
  
  void Supla::Protocol::SuplaSrpc::sendActionTrigger(uint8_t channelNumber,
                                                     uint32_t actionId) {
@@ -265,7 +264,7 @@ index 1695c86d..50404ebb 100644
      return;
    }
  
-@@ -1276,7 +1294,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+@@ -2615,7 +2630,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
      int8_t *value,
      uint8_t offline,
      uint32_t validityTimeSec) {
@@ -274,7 +273,7 @@ index 1695c86d..50404ebb 100644
      return;
    }
    srpc_ds_async_channel_value_changed_c(srpc,
-@@ -1288,7 +1306,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
+@@ -2627,7 +2642,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
  
  void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
      uint8_t channelNumber, TSuplaChannelExtendedValue *value) {
@@ -283,7 +282,7 @@ index 1695c86d..50404ebb 100644
      return;
    }
    srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
-@@ -1296,7 +1314,7 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
+@@ -2635,7 +2650,7 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
  
  void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
                                                    uint8_t configType) {
@@ -292,7 +291,7 @@ index 1695c86d..50404ebb 100644
      return;
    }
    TDS_GetChannelConfigRequest request = {};
-@@ -1310,7 +1328,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
+@@ -2649,7 +2664,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
                                                    void *channelConfig,
                                                    int size,
                                                    uint8_t configType) {
@@ -301,7 +300,7 @@ index 1695c86d..50404ebb 100644
      return false;
    }
    if ((size != 0 && channelConfig == nullptr) ||
-@@ -1345,7 +1363,7 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
+@@ -2684,7 +2699,7 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
  
  bool Supla::Protocol::SuplaSrpc::setInitialCaption(uint8_t channelNumber,
                                                     const char *caption) {
@@ -310,7 +309,7 @@ index 1695c86d..50404ebb 100644
      return false;
    }
    TDCS_SetCaption *request = new TDCS_SetCaption;
-@@ -1467,7 +1485,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
+@@ -2809,7 +2824,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
                                                          uint32_t timeMs,
                                                          uint8_t state,
                                                          int32_t senderId) {
@@ -319,7 +318,7 @@ index 1695c86d..50404ebb 100644
      SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not registered");
      return;
    }
-@@ -1497,7 +1515,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
+@@ -2839,7 +2854,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
      unsigned char state[SUPLA_CHANNELVALUE_SIZE],
      int32_t senderId,
      bool useSecondsInsteadOfMs) {

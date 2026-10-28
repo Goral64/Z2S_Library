@@ -49,19 +49,8 @@ extern uint32_t _auto_connection_reset_timeout;
 
 extern uint8_t _z2s_security_level;
 
-#define MAX_ATTRIBUTE_ID_SELECTOR_OPTIONS 40
-#define MAX_ATTRIBUTE_VALUE_SELECTOR_OPTIONS 5
-#define MAX_TUYA_DATAPOINTS_SELECTOR_OPTIONS 15
-
 static volatile bool GUIstarted = false;
 static volatile bool GUIbuilt = false;
-
-static volatile uint16_t max_attribute_value_selector_options =
-  MAX_ATTRIBUTE_VALUE_SELECTOR_OPTIONS;
-
-static volatile uint16_t max_Tuya_datapoints_selector_options =
-  MAX_TUYA_DATAPOINTS_SELECTOR_OPTIONS;
-
 
 //UI handles
 
@@ -89,8 +78,7 @@ uint16_t save_button;
 uint16_t save_label;
 
 uint16_t pairing_mode_switcher = 0xFFFF;
-uint16_t force_leave_switcher = 0xFFFF;
-uint16_t zigbee_tx_power_text;
+uint16_t zigbee_tx_power_number;
 uint16_t zigbee_primary_channel_text;
 uint16_t zigbee_primary_channel_label;
 uint16_t zigbee_last_binding_result_label;
@@ -106,6 +94,7 @@ uint16_t device_status_label;
 uint16_t device_name_text;
 uint16_t device_name_save_button;
 
+uint16_t battery_panel_label;
 uint16_t battery_voltage_min_number;
 uint16_t battery_voltage_max_number;
 uint16_t battery_voltage_min_save_button;
@@ -173,7 +162,7 @@ uint16_t trv_cooperative_childlock_switcher;
 uint16_t set_sorwns_on_start_switcher;
 uint16_t enable_resend_temperature_switcher;
 uint16_t skip_subdevice_registation_switcher;
-uint16_t param_1_number;
+uint16_t param_1_text;
 uint16_t param_1_desc_label;
 uint16_t param_1_save_button;
 uint16_t param_2_number;
@@ -245,15 +234,12 @@ enum Tuya_devices_tab_controls {
 
 uint16_t Tuya_devices_tab_controls_table[Tuya_device_last_enum_position];
 
-//uint16_t table_first_button;
-//uint16_t table_next_button;
-//uint16_t table_prev_button;
-//uint16_t table_last_button;
-//uint16_t actions_table_label;
 uint16_t actions_table_label_2;
+
+uint16_t action_details_label;
+uint16_t action_enabled_switcher;
 uint16_t action_name_text;
 uint16_t action_description_text;
-uint16_t action_enabled_switcher;
 uint16_t action_source_channel_selector = 0xFFFF;
 uint16_t action_destination_channel_selector = 0xFFFF;
 uint16_t action_event_selector = 0xFFFF;
@@ -267,6 +253,7 @@ uint16_t action_edit_button;
 uint16_t action_new_button;
 uint16_t action_copy_button;
 uint16_t action_remove_button;
+uint16_t action_chain_button;
 uint16_t action_state_label;
 
 uint16_t sb_channel_selector = 0xFFFF;
@@ -276,7 +263,22 @@ uint16_t sb_json_payload_text;
 uint16_t sb_json_payload_2_text;
 uint16_t sb_status_label;
 
-uint16_t pushover_message_first_button;
+uint16_t pushover_api_token_text;
+uint16_t pushover_user_token_text;
+uint16_t pushover_messages_table_label = 0xFFFF;
+uint16_t pushover_message_details_label;
+uint16_t pushover_message_name_text;
+uint16_t pushover_message_text_text;
+
+uint16_t pushover_message_save_button;
+uint16_t pushover_message_cancel_button;
+uint16_t pushover_message_edit_button;
+uint16_t pushover_message_new_button;
+uint16_t pushover_message_copy_button;
+uint16_t pushover_message_remove_button;
+uint16_t pushover_message_state_label;
+
+/*uint16_t pushover_message_first_button;
 uint16_t pushover_message_next_button;
 uint16_t pushover_message_prev_button;
 uint16_t pushover_message_last_button;
@@ -288,7 +290,25 @@ uint16_t pushover_message_edit_button;
 uint16_t pushover_message_new_button;
 uint16_t pushover_message_copy_button;
 uint16_t pushover_message_remove_button;
-uint16_t pushover_message_state_label;
+uint16_t pushover_message_state_label;*/
+
+uint16_t ir_device_selector = 0xFFFF;
+uint16_t ir_device_info_label;
+uint16_t ir_codes_table_label;
+
+uint16_t ir_code_new_button;
+uint16_t ir_code_edit_button;
+uint16_t ir_code_copy_button;
+uint16_t ir_code_save_button;
+uint16_t ir_code_cancel_button;
+uint16_t ir_code_remove_button;
+uint16_t ir_code_learn_button;
+uint16_t ir_code_send_button;
+uint16_t ir_code_state_label;
+
+uint16_t ir_code_details_label;
+uint16_t ir_code_name_text;
+uint16_t ir_code_base64_text;
 
 
 volatile bool data_ready = false;
@@ -376,8 +396,9 @@ enum GuiBuildControlFlag : uint16_t {
 	GUI_BUILD_CONTROL_FLAG_TCC = 1 << 8,          // 0x0100
 	GUI_BUILD_CONTROL_FLAG_SB = 1 << 9,           // 0x0200
 	GUI_BUILD_CONTROL_FLAG_PO = 1 << 10,          // 0x0400
-	GUI_BUILD_CONTROL_FLAG_MD = 1 << 11,          // 0x0800
-	GUI_BUILD_CONTROL_FLAG_LAST = 1 << 12         // 0x8000
+	GUI_BUILD_CONTROL_FLAG_IR = 1 << 11,          // 0x0800
+	GUI_BUILD_CONTROL_FLAG_MD = 1 << 12,          // 0x1000
+	GUI_BUILD_CONTROL_FLAG_LAST = 1 << 13         // 0x8000
 };
 
 volatile uint8_t controls_enabled_flags = 0xFF;
@@ -406,8 +427,15 @@ volatile int16_t current_action_counter = -1;
 volatile int16_t new_action_id = -1;
 volatile int16_t current_action_id = -1;
 
+int32_t current_ir_device_id = -1;
+volatile int16_t current_ir_code_counter = -1;
+volatile int16_t current_ir_code_id = -1;
+volatile int16_t new_ir_code_id = -1;
+volatile bool ir_code_learning_gui_active = false;
+
 volatile ActionGUIState current_action_gui_state = VIEW_ACTION;
 volatile ActionGUIState previous_action_gui_state = VIEW_ACTION;
+volatile IrCodeGUIState current_ir_gui_state = VIEW_IR_CODE;
 
 volatile int16_t current_message_counter = -1;
 volatile int16_t new_message_id = -1;
@@ -529,6 +557,7 @@ volatile PushoverMessageGUIState previous_pushover_message_gui_state =
 #define GUI_CB_ACTION_CANCEL_FLAG 0x9013
 #define GUI_CB_ACTION_REMOVE_FLAG 0x9014
 #define GUI_CB_ACTION_COPY_FLAG 0x9015
+#define GUI_CB_ACTION_CHAIN_FLAG 0x9016
 
 #define GUI_CB_ADD_SB_1X_FLAG 0xA000
 #define GUI_CB_ADD_SB_2X_FLAG 0xA001
@@ -545,6 +574,15 @@ volatile PushoverMessageGUIState previous_pushover_message_gui_state =
 #define GUI_CB_PUSHOVER_MESSAGE_CANCEL_FLAG 0xB013
 #define GUI_CB_PUSHOVER_MESSAGE_REMOVE_FLAG 0xB014
 #define GUI_CB_PUSHOVER_MESSAGE_COPY_FLAG 0xB015
+
+#define GUI_CB_IR_CODE_NEW_FLAG    0xC001
+#define GUI_CB_IR_CODE_EDIT_FLAG   0xC002
+#define GUI_CB_IR_CODE_COPY_FLAG   0xC003
+#define GUI_CB_IR_CODE_SAVE_FLAG   0xC004
+#define GUI_CB_IR_CODE_CANCEL_FLAG 0xC005
+#define GUI_CB_IR_CODE_REMOVE_FLAG 0xC006
+#define GUI_CB_IR_CODE_LEARN_FLAG  0xC007
+#define GUI_CB_IR_CODE_SEND_FLAG   0xC008
 
 
 static constexpr char *three_dots_str PROGMEM = "...";
@@ -575,13 +613,13 @@ static constexpr char *factory_reset_enabled_str PROGMEM =
 static constexpr char *factory_reset_disabled_str PROGMEM =
   "Zigbee stack factory reset disabled";
 
-static constexpr char *zigbee_tx_power_text_str PROGMEM =
+/*static constexpr char *zigbee_tx_power_text_str PROGMEM =
   "Press Read to get current value or enter value between "
-  "-24 and 20 and press Update";
+  "-24 and 20 and press Update";*/
 
-static constexpr char *zigbee_primary_channel_info_str PROGMEM =
+/*static constexpr char *zigbee_primary_channel_info_str PROGMEM =
   "Press Read to get current value or enter value between "
-  "11 and 26 and press Update";
+  "11 and 26 and press Update";*/
 
 static constexpr char *zigbee_primary_channel_update_str PROGMEM =
   "New Zigbee primary channel write success!<br>"
@@ -591,10 +629,8 @@ static constexpr char *zigbee_primary_channel_update_str PROGMEM =
   "which itself will require re-pairing every device!<br><br>"
   //"with active switch "
   //"<b><i>Force device to bind gateway again</i></b>"
-  "TIP: Before re-pairing device turn on switch "
-  "<b><i>Force device to bind gateway again</i></b>"
-  " and don't remove that device from gateway via Cloud/GUI - "
-  "all channels settings and actions will remain unchanged.";
+  "TIP: Before re-pairing device <b>don't remove</b> that device from gateway"
+	"via Cloud/GUI - all channels settings and actions will remain unchanged.";
 
 static constexpr char *OTA_server_notify_success_str PROGMEM =
   "OTA upgrade server notify sent successfully!";
@@ -612,20 +648,31 @@ static constexpr char *dest_thermometer_channel_desc =
 static constexpr char *src_thermometer_channel_desc =
   "&#10023; Enter source thermometer local channel # &#10023;<br>";
 
-static constexpr char *keepalive_desc =
+/*static constexpr char *keepalive_desc =
   "&#10023; keepalive (s) &#10023;<br>&#10023;turn on delay (s) [logical"
-  " gates]&#10023;<br>&#10023; action trigger hold repeat (ms) &#10023;";
+  " gates]&#10023;<br>&#10023; action trigger hold repeat (ms) &#10023;";*/
+
+static constexpr char *keepalive_desc =
+  "keepalive (s) \u2022 turn on delay (s) \u2022 hold repeat (ms)";
 
 static constexpr char *timeout_desc =
-  "&#10023; timeout (s) &#10023;<br>&#10023;turn off delay (s) [logical"
-  " gates]&#10023;";
+	"timeout (s) \u2022 turn off delay (s) [logical gates]";
 
-static constexpr char *refresh_desc =
+  //"&#10023; timeout (s) &#10023;<br>&#10023;turn off delay (s) [logical"
+  //" gates]&#10023;";
+
+/*static constexpr char *refresh_desc =
   "&#10023; refresh(s) [ElectricityMeter] &#10023;<br>"
   "&#10023; autoset(s) [VirtualBinary] &#10023;<br>"
   "&#10023; debounce(ms) [VirtualSceneSwitch] &#10023; <br>"
   "&#10023; thermometers timeout(s) [Remote Thermometer] &#10023;<br>"
-  "&#10023; read interval(s) [VirtualThermhygrometer] &#10023;";
+  "&#10023; read interval(s) [VirtualThermhygrometer] &#10023;";*/
+
+static constexpr char *refresh_desc =
+  "refresh(s) [ElectricityMeter] \u2022 autoset(s) [VirtualBinary] \u2022 "
+  "debounce(ms) [VirtualSceneSwitch] \u2022 thermometers timeout(s) "
+	"[Remote Thermometer] \u2022 read interval(s) [VirtualThermhygrometer]";
+
 
 //static char general_purpose_gui_buffer[1024] = {};
 
@@ -645,6 +692,9 @@ static constexpr char *clearFlagsLabelStyle PROGMEM =
 //
 
 static const char *myCustomJS = R"=====(
+
+window.z2sIrOptions = [];
+window.z2sPoOptions = [];
 
 function redirect2ZigbeeOTA() {
 	
@@ -745,7 +795,10 @@ function updateSelectOptions(targetSelects, optionsData, selectedValue = null, c
     }
 
     if (!selectEl) {
-      console.warn(`[Select Populator] Target element '${target}' not found.`);
+      console.warn(`[Select Populator] '${target}' not in DOM yet, retrying in 150ms...`);
+      setTimeout(() => {
+        updateSelectOptions([target], optionsData, selectedValue, clearExisting);
+      }, 150);
       return;
     }
 
@@ -796,266 +849,316 @@ function sendActionClickToESP32(actionIndex) {
   }
 }
 
+function formatActionTableCell(cellContent, colIdx, isIr, isPo) {
+  const str = String(cellContent);
+  if (isIr || isPo) return str;
+
+  // Kolumna 0: Action Name + przycisk statusu (ON/OFF)
+  if (colIdx === 0) {
+    const match = str.match(/^(.*)\s+\((on|off)\)$/i);
+    if (match) {
+      const isOn = match[2].toLowerCase() === 'on';
+      return `<span class="action-name-cell"><span class="${isOn ? 'action-btn-on' : 'action-btn-off'}">${isOn ? 'ON' : 'OFF'}</span><span>${match[1]}</span></span>`;
+    }
+  }
+
+  // Kolumna 1 (Supla event) & Kolumna 3 (Supla action): Płaski przycisk (Flat button)
+  if (colIdx === 1 || colIdx === 3) {
+    const match = str.match(/^(.*?)(\s+\((?:v:|sid:).*\))$/);
+    if (match) {
+      return `<span class="action-flat-btn">${match[1]}</span><span class="action-btn-meta">${match[2]}</span>`;
+    }
+    return `<span class="action-flat-btn">${str}</span>`;
+  }
+
+  // Kolumna 2 (Source channel) & Kolumna 4 (Destination channel): Przycisk łańcucha logiki 🔗
+  if (colIdx === 2 || colIdx === 4) {
+    const safeChannel = str.replace(/"/g, '&quot;');
+    return `<span class="channel-cell-wrap"><span class="channel-chain-btn" data-channel="${safeChannel}" title="Pokaż wszystkie akcje powiązane z tym kanałem">🔗</span><span class="channel-cell-name">${str}</span></span>`;
+  }
+
+  return str;
+}
+
+function filterActionTable(targetId) {
+  const targetLabel = document.getElementById(targetId);
+  if (!targetLabel) return;
+
+  const searchInput = targetLabel.querySelector(".table-search-input");
+  const clearBtn = targetLabel.querySelector(".table-search-clear");
+  const countBadge = targetLabel.querySelector(".table-search-count");
+  const tbody = targetLabel.querySelector("tbody");
+  if (!searchInput || !tbody) return;
+
+  const query = searchInput.value.trim().toLowerCase();
+  targetLabel.dataset.searchQuery = searchInput.value;
+
+  if (clearBtn) {
+    clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  }
+
+  const isIr = targetLabel.dataset.isIr === "1";
+  const isPo = targetLabel.dataset.isPo === "1";
+  const colSpan = (isIr || isPo) ? 3 : 5;
+  const searchCols = (isIr || isPo) ? [1] : [0, 2, 4];
+
+  const rows = tbody.querySelectorAll("tr[data-action-idx]");
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+    let rowMatches = !query;
+
+    searchCols.forEach(colIdx => {
+      const cell = cells[colIdx];
+      if (!cell) return;
+
+      let rawText = cell.getAttribute("title") || cell.textContent || "";
+      if (!isIr && !isPo && colIdx === 0) {
+        rawText = rawText.replace(/\s+\((on|off)\)$/i, "");
+      }
+
+      const colHit = Boolean(query) && rawText.toLowerCase().includes(query);
+      if (colHit) rowMatches = true;
+
+      // Podświetlenie roli w obwodzie dla Source (Col 2) i Destination (Col 4)
+      if (!isIr && !isPo && (colIdx === 2 || colIdx === 4)) {
+        const wrap = cell.querySelector(".channel-cell-wrap");
+        if (wrap) {
+          wrap.classList.toggle("chain-match-src", colHit && colIdx === 2);
+          wrap.classList.toggle("chain-match-dst", colHit && colIdx === 4);
+        }
+      }
+    });
+
+    row.style.display = rowMatches ? "" : "none";
+    if (rowMatches) visibleCount++;
+  });
+
+  let noMatchRow = tbody.querySelector("tr.no-search-match");
+  if (rows.length > 0 && visibleCount === 0) {
+    if (!noMatchRow) {
+      noMatchRow = document.createElement("tr");
+      noMatchRow.className = "no-search-match";
+      noMatchRow.innerHTML = `<td colspan="${colSpan}" style="text-align:center;padding:16px;color:#94a3b8;font-style:italic;">No matching items found</td>`;
+      tbody.appendChild(noMatchRow);
+    }
+    noMatchRow.style.display = "";
+  } else if (noMatchRow) {
+    noMatchRow.style.display = "none";
+  }
+
+  if (countBadge) {
+    countBadge.textContent = query ? `${visibleCount} / ${rows.length}` : `${rows.length}`;
+  }
+}
 
 function updateActionTable(data) {
   const targetLabel = document.getElementById(data.target);
   if (!targetLabel) return;
 
+  const isIr = Boolean(data.is_ir);
+  const isPo = Boolean(data.is_po);
+  const colSpan = (isIr || isPo) ? 3 : 5;
+  const emptyMsg = isIr ? "No IR codes saved for this device" : (isPo ? "No Pushover messages available" : "No actions available");
+  const searchPlaceholder = isIr
+    ? "Search IR command by name..."
+    : (isPo ? "Search Pushover message by name..." : "Search by action, source, or destination channel...");
+
+  targetLabel.dataset.isIr = isIr ? "1" : "0";
+  targetLabel.dataset.isPo = isPo ? "1" : "0";
+  const savedSearch = targetLabel.dataset.searchQuery || "";
+
   let rowsHtml = "";
 
-  // 1. Handle Empty Table State vs Row Building
   if (!data.d || data.d.length === 0) {
-    rowsHtml = `<tr>
-      <td colspan="5" style="text-align: center; padding: 16px; color: #6c757d; font-style: italic;">
-        No actions available
-      </td>
-    </tr>`;
+    rowsHtml = `<tr><td colspan="${colSpan}" style="text-align:center;padding:16px;color:#6c757d;font-style:italic;">${emptyMsg}</td></tr>`;
   } else {
+		if (!data.append) {
+      if (isIr) window.z2sIrOptions = [];
+      if (isPo) window.z2sPoOptions = [];
+    }
     data.d.forEach((row, index) => {
-      let absoluteIndex = (data.start_idx !== undefined ? data.start_idx : 0) + index;
-      
-      let style = "";
-      if (absoluteIndex === data.s) {
-        style = "background-color: rgba(0, 123, 255, 0.2); font-weight: bold;";
-      } else {
-        style = "font-weight: normal;"; 
+			
+			if ((isIr || isPo) && row.length >= 2) {
+        const slotId = parseInt(String(row[0]).replace('#', ''), 10);
+        if (!isNaN(slotId)) {
+          const entry = { id: slotId, label: `${row[0]} - ${row[1]}` };
+          if (isIr) window.z2sIrOptions.push(entry);
+          if (isPo) window.z2sPoOptions.push(entry);
+        }
       }
-        
+
+      const absoluteIndex = (data.start_idx !== undefined ? data.start_idx : 0) + index;
+      const style = (absoluteIndex === data.s) ? "background-color:rgba(0,123,255,0.2);font-weight:bold;" : "font-weight:normal;";
       rowsHtml += `<tr style="${style}" data-action-idx="${absoluteIndex}">`;
-      row.forEach(cell => {
+      row.forEach((cell, colIdx) => {
         const cleanCell = String(cell).replace(/"/g, '&quot;');
-        rowsHtml += `<td style="padding: 6px; border-bottom: 1px solid #eee;" title="${cleanCell}">${cell}</td>`;
+        const renderedCell = formatActionTableCell(cell, colIdx, isIr, isPo);
+        rowsHtml += `<td style="padding:6px;border-bottom:1px solid #eee;vertical-align:middle;" title="${cleanCell}">${renderedCell}</td>`;
       });
       rowsHtml += "</tr>";
     });
   }
 
-  // 2. Append Chunks vs Full Re-render
   if (data.append) {
-    let tbody = targetLabel.querySelector("tbody");
+    const tbody = targetLabel.querySelector("tbody");
     if (tbody) {
       tbody.insertAdjacentHTML('beforeend', rowsHtml);
+      filterActionTable(data.target);
     }
-  } else {
-    // 3. Inject CSS (Sticky Headers, Hover, Container Focus Glow, Footer Hints)
-    let html = `<style>
-      #${data.target} tbody tr[data-action-idx] { cursor: pointer; transition: background 0.15s; }
-      #${data.target} tbody tr[data-action-idx]:hover { background-color: rgba(0, 123, 255, 0.2) !important; }
-      #${data.target} th { 
-        position: sticky; top: 0; background: #e9ecef; color: #212529; 
-        font-weight: 600; border-bottom: 2px solid #adb5bd; z-index: 10; 
-        box-shadow: 0 2px 4px -2px rgba(0,0,0,0.25); 
-      }
-      #${data.target} th, #${data.target} td {
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      /* Base container styling with fixed height & scroll containment */
-      /* Container supporting dual vertical and horizontal scrolling */
-      #${data.target} div[tabindex="0"] {
-        height: 210px;
-        overflow: auto; /* Enables horizontal scrollbar when width < 720px */
-        overscroll-behavior: contain;
-        margin-top: 8px; 
-        border: 1px solid rgba(128, 128, 128, 0.25);
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-      }
+    return;
+  }
 
-      /* Compact Slim Scrollbars for WebKit browsers */
-      #${data.target} div[tabindex="0"]::-webkit-scrollbar {
-        width: 6px;
-        height: 6px; /* Horizontal scrollbar height */
-      }
-      #${data.target} div[tabindex="0"]::-webkit-scrollbar-track {
-        background: rgba(128, 128, 128, 0.1);
-        border-radius: 4px;
-      }
-      #${data.target} div[tabindex="0"]::-webkit-scrollbar-thumb {
-        background: rgba(128, 128, 128, 0.35);
-        border-radius: 4px;
-      }
-      #${data.target} div[tabindex="0"]::-webkit-scrollbar-thumb:hover {
-        background: rgba(128, 128, 128, 0.55);
-      }
+  let html = `<style>
+    #${data.target} tbody tr[data-action-idx]{cursor:pointer;transition:background 0.15s;}
+    #${data.target} tbody tr[data-action-idx]:hover{background-color:rgba(0,123,255,0.2)!important;}
+    #${data.target} th{position:sticky;top:0;background:#e9ecef;color:#212529;font-weight:600;border-bottom:2px solid #adb5bd;z-index:10;box-shadow:0 2px 4px -2px rgba(0,0,0,0.25);}
+    #${data.target} th,#${data.target} td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #${data.target} .table-search-bar{display:flex;align-items:center;gap:8px;margin-top:8px;padding:5px 10px;background:rgba(0,0,0,0.25);border:1px solid rgba(128,128,128,0.25);border-bottom:none;border-top-left-radius:6px;border-top-right-radius:6px;}
+    #${data.target} .table-search-input{flex:1;background:rgba(255,255,255,0.08)!important;border:1px solid rgba(255,255,255,0.2)!important;border-radius:4px!important;color:#f8fafc!important;padding:4px 8px!important;font-size:12px!important;outline:none!important;margin:0!important;height:26px!important;box-sizing:border-box!important;}
+    #${data.target} .table-search-input::placeholder{color:#94a3b8;}
+    #${data.target} .table-search-input:focus{border-color:#80bdff!important;box-shadow:0 0 0 2px rgba(0,123,255,0.25)!important;}
+    #${data.target} .table-search-clear{display:none;align-items:center;justify-content:center;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#cbd5e1;border-radius:4px;padding:0 7px;height:24px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;}
+    #${data.target} .table-search-clear:hover{background:rgba(231,76,60,0.7);color:#fff;}
+    #${data.target} .table-search-count{font-size:11px;font-weight:600;color:#94a3b8;min-width:36px;text-align:right;user-select:none;}
+    #${data.target} .action-name-cell{display:inline-flex;align-items:center;gap:6px;}
+    #${data.target} .action-btn-on,#${data.target} .action-btn-off{display:inline-flex;align-items:center;justify-content:center;padding:2px 6px;font-size:10px;font-weight:700;line-height:1.1;border-radius:4px;letter-spacing:0.4px;flex-shrink:0;}
+    #${data.target} .action-btn-on{background-color:#2ecc71;color:#fff;border:1px solid #27ae60;box-shadow:0 1px 2px rgba(0,0,0,0.2);}
+    #${data.target} .action-btn-off{background-color:rgba(148,163,184,0.2);color:#94a3b8;border:1px solid rgba(148,163,184,0.35);}
+    #${data.target} .action-flat-btn{display:inline-block;padding:2px 8px;font-size:11px;font-weight:600;line-height:1.3;border-radius:4px;background-color:rgba(128,128,128,0.15);border:1px solid rgba(128,128,128,0.3);color:inherit;}
+    #${data.target} .action-btn-meta{font-size:11px;opacity:0.8;margin-left:3px;}
+		#${data.target} .channel-cell-wrap{display:inline-flex;align-items:center;gap:5px;padding:1px 5px;border-radius:4px;max-width:100%;transition:all 0.15s;}
+    #${data.target} .channel-chain-btn{display:inline-flex;align-items:center;justify-content:center;font-size:10px;padding:1px 4px;border-radius:3px;background:rgba(128,128,128,0.15);border:1px solid rgba(128,128,128,0.3);cursor:pointer;opacity:0.65;flex-shrink:0;transition:all 0.15s;}
+    #${data.target} .channel-chain-btn:hover{opacity:1;background:rgba(0,123,255,0.35);border-color:#80bdff;transform:scale(1.08);}
+    #${data.target} .chain-match-src{background:rgba(59,130,246,0.22);border:1px solid rgba(96,165,250,0.55);color:#93c5fd;font-weight:600;}
+    #${data.target} .chain-match-dst{background:rgba(245,158,11,0.22);border:1px solid rgba(251,191,36,0.55);color:#fcd34d;font-weight:600;}
+    #${data.target} div[tabindex]{height:210px;overflow:auto;overscroll-behavior:contain;border:1px solid rgba(128,128,128,0.25);transition:border-color 0.15s,box-shadow 0.15s;}
+    #${data.target} div[tabindex]::-webkit-scrollbar{width:6px;height:6px;}
+    #${data.target} div[tabindex]::-webkit-scrollbar-track{background:rgba(128,128,128,0.1);border-radius:4px;}
+    #${data.target} div[tabindex]::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.35);border-radius:4px;}
+    #${data.target} div[tabindex="0"]:focus{border-color:#80bdff!important;box-shadow:0 0 0 0.2rem rgba(0,123,255,0.25)!important;outline:none!important;}
+    #${data.target} .table-footer-hints{display:flex!important;flex-wrap:wrap!important;gap:14px!important;justify-content:center!important;align-items:center!important;background:rgba(0,0,0,0.3)!important;border:1px solid rgba(255,255,255,0.15)!important;border-top:none!important;border-bottom-left-radius:6px!important;border-bottom-right-radius:6px!important;padding:5px 10px!important;font-size:10px!important;line-height:1!important;color:#cbd5e1!important;user-select:none!important;}
+    #${data.target} .table-footer-hints span{display:inline-flex!important;align-items:center!important;gap:4px!important;font-size:10px!important;line-height:1!important;}
+    #${data.target} .table-footer-hints kbd{background-color:#334155!important;border:1px solid #475569!important;border-radius:3px!important;box-shadow:0 1px 1px rgba(0,0,0,0.4)!important;color:#f8fafc!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-family:inherit!important;font-size:9px!important;font-weight:600!important;padding:2px 4px!important;line-height:1!important;height:16px!important;}
+    #${data.target} .table-disabled{pointer-events:none!important;overflow-y:hidden!important;opacity:0.5!important;filter:grayscale(50%);user-select:none;}
+    #${data.target} .table-status-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+    #${data.target} .badge-active{background-color:#e6f4ea;color:#137333;border:1px solid #ceedd5;}
+    #${data.target} .badge-locked{background-color:#fce8e6;color:#c5221f;border:1px solid #f5c6cb;}
+  </style>`;
 
-      /* Keyboard focus glow state (kept intact) */
-      #${data.target} div[tabindex="0"]:focus {
-        border-color: #80bdff !important;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-        outline: none !important;
-      }
-      }
-      #${data.target} .table-footer-hints {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 14px !important;
-        justify-content: center !important;
-        align-items: center !important;
-        background: rgba(0, 0, 0, 0.3) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-top: none !important;
-        border-bottom-left-radius: 6px !important;
-        border-bottom-right-radius: 6px !important;
-        padding: 5px 10px !important;
-        font-size: 10px !important; /* Overrides ESPUI's ~14px body font on plain text */
-        line-height: 1 !important;
-        color: #cbd5e1 !important;
-        user-select: none !important;
-      }
+  const headerHtml = isIr
+    ? "<th style='padding:6px;width:80px;min-width:80px;'>ID (sid)</th><th style='padding:6px;width:220px;min-width:180px;'>Command Name</th><th style='padding:6px;width:420px;min-width:260px;'>IR Code (Base64)</th>"
+    : isPo
+    ? "<th style='padding:6px;width:80px;min-width:80px;'>ID (sid)</th><th style='padding:6px;width:220px;min-width:180px;'>Message Name</th><th style='padding:6px;width:420px;min-width:260px;'>Message Text</th>"
+    : "<th style='padding:6px;width:140px;min-width:140px;'>Name (state)</th><th style='padding:6px;width:160px;min-width:160px;'>Supla event</th><th style='padding:6px;width:150px;min-width:150px;'>Source channel</th><th style='padding:6px;width:150px;min-width:150px;'>Supla action</th><th style='padding:6px;width:150px;min-width:150px;'>Destination channel</th>";
 
-      /* Text + Keycap Groupings */
-      #${data.target} .table-footer-hints span {
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-        font-size: 10px !important; /* Strictly enforces 10px on text nodes like "Navigate" */
-        line-height: 1 !important;
-      }
+  const safeSavedSearch = savedSearch.replace(/"/g, '&quot;');
+  html += `<div class="table-search-bar">
+    <input type="text" class="table-search-input" placeholder="🔍 ${searchPlaceholder}" value="${safeSavedSearch}" autocomplete="off">
+    <span class="table-search-clear" title="Clear search">✕</span>
+    <span class="table-search-count">0</span>
+  </div>
+  <div tabindex="0">
+    <table style="width:100%;min-width:750px;table-layout:fixed;border-collapse:collapse;text-align:left;">
+      <thead><tr>${headerHtml}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>
+  <div class="table-footer-hints">
+    <span><span class="table-status-badge badge-active">Active</span></span>
+    <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+    <span><kbd>PgUp</kbd><kbd>PgDn</kbd> ±5 Rows</span>
+    <span><kbd>Home</kbd><kbd>End</kbd> First/Last</span>
+  </div>`;
 
-      /* Keycap Styling */
-      #${data.target} .table-footer-hints kbd {
-        background-color: #334155 !important;
-        border: 1px solid #475569 !important;
-        border-radius: 3px !important;
-        box-shadow: 0 1px 1px rgba(0,0,0,0.4) !important;
-        color: #f8fafc !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-family: inherit !important;
-        font-size: 9px !important;
-        font-weight: 600 !important;
-        padding: 2px 4px !important;
-        line-height: 1 !important;
-        height: 16px !important;
-      }
-			/* Disabled Overlay & Input Lock */
-      #${data.target} div.table-disabled {
-        pointer-events: none !important;   /* Blocks mouse clicks, hover, and wheel scrolling */
-        overflow-y: hidden !important;     /* Locks scrollbar in place */
-        opacity: 0.5 !important;           /* Visual disabled state */
-        filter: grayscale(50%);
-        user-select: none;
-      }
-			/* Status Badge Styles */
-      #${data.target} .table-status-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.2s ease;
-      }
-      #${data.target} .badge-active {
-        background-color: #e6f4ea;
-        color: #137333;
-        border: 1px solid #ceedd5;
-      }
-      #${data.target} .badge-locked {
-        background-color: #fce8e6;
-        color: #c5221f;
-        border: 1px solid #f5c6cb;
-      }
-    </style>`;
+  targetLabel.innerHTML = html;
+  targetLabel.style.display = "block";
 
-    // Scrollable Table Container with Horizontal & Vertical Scroll
-    html += "<div tabindex='0' style='height: 210px; margin-top: 8px; overflow: auto; overscroll-behavior: contain; border: 1px solid rgba(128,128,128,0.25); border-top-left-radius: 6px; border-top-right-radius: 6px;'>" +
-      "<table style='width:100%; min-width: 720px; table-layout: fixed; border-collapse: collapse; text-align: left;'>" +
-      "<thead><tr>" +
-      "<th style='padding: 6px; width: 130px; min-width: 130px;'>Name (enabled)</th>" +
-      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Supla event</th>" +
-      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Source channel</th>" +
-      "<th style='padding: 6px; width: 140px; min-width: 140px;'>Supla action</th>" +
-      "<th style='padding: 6px; width: 150px; min-width: 150px;'>Destination channel</th>" +
-      "</tr></thead><tbody>" + rowsHtml + "</tbody></table></div>";
+  const searchInput = targetLabel.querySelector(".table-search-input");
+  const clearBtn = targetLabel.querySelector(".table-search-clear");
+  const container = targetLabel.querySelector("div[tabindex='0']");
+  const tbody = targetLabel.querySelector("tbody");
 
-    // 5. Footer Hotkey Legend
-    // Footer Bar with Hotkey Legend + Status Badge
-    html += `<div class="table-footer-hints">
-      <span><span class="table-status-badge badge-active">Active</span></span>
-      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
-      <span><kbd>PgUp</kbd><kbd>PgDn</kbd> ±5 Rows</span>
-      <span><kbd>Home</kbd><kbd>End</kbd> First/Last</span>
-    </div>`;
-
-    targetLabel.innerHTML = html;
-    targetLabel.style.display = "block";
-
-    const container = targetLabel.querySelector("div[tabindex='0']");
-    const tbody = targetLabel.querySelector("tbody");
-
-    if (tbody && container) {
-      // Unified Selection & Event Dispatch Handler
-      const activateRow = (rowElement, shouldScroll = true) => {
-        if (!rowElement) return;
-
-        const actionIndex = parseInt(rowElement.getAttribute("data-action-idx"));
-        if (isNaN(actionIndex)) return;
-
-        // 1. Visual highlight
-        highlightActionRow({ target: data.target, s: actionIndex }, shouldScroll);
-
-        // Trigger custom callback to send this index back to the ESP32
-      
-        sendActionClickToESP32(actionIndex);
-        
-      };
-
-      // 1. Mouse Click Listener
-      tbody.addEventListener("click", function(e) {
-        const clickedRow = e.target.closest("tr[data-action-idx]");
-        if (!clickedRow) return;
-
+  if (searchInput) {
+    searchInput.addEventListener("input", () => filterActionTable(data.target));
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        searchInput.value = "";
+        filterActionTable(data.target);
+      } else if (e.key === "ArrowDown" && container) {
+        e.preventDefault();
         container.focus();
-        activateRow(clickedRow, false); // Mouse click: do not scroll jump
-      });
+      }
+    });
+  }
+  if (clearBtn && searchInput) {
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      filterActionTable(data.target);
+      searchInput.focus();
+    });
+  }
 
-      // 2. Keyboard Navigation Listener
-      container.addEventListener("keydown", function(e) {
-        const navKeys = ["ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown", "Enter", " "];
-        if (!navKeys.includes(e.key)) return;
+  filterActionTable(data.target);
 
-        const rows = tbody.querySelectorAll("tr[data-action-idx]");
-        if (!rows.length) return;
+  if (tbody && container) {
+    const activateRow = (rowElement, shouldScroll = true) => {
+      if (!rowElement) return;
+      const actionIndex = parseInt(rowElement.getAttribute("data-action-idx"));
+      if (isNaN(actionIndex)) return;
 
-        let currentIndex = 0;
-        rows.forEach((row, idx) => {
-          if (row.style.fontWeight === "bold") {
-            currentIndex = idx;
-          }
-        });
+      highlightActionRow({ target: data.target, s: actionIndex }, shouldScroll);
+      const clickMask = isIr ? 0x4000 : (isPo ? 0x2000 : 0);
+      sendActionClickToESP32(actionIndex | clickMask);
+    };
 
-        // Pressing Enter or Space triggers an explicit row click
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          rows[currentIndex].click();
-          return;
-        }
+    tbody.addEventListener("click", function(e) {
+      // Obsługa kliknięcia w przycisk 🔗 (filtruj obwód tego kanału / wyczyść jeśli już aktywny)
+      const chainBtn = e.target.closest(".channel-chain-btn");
+      if (chainBtn && searchInput) {
+        e.stopPropagation();
+        const chName = chainBtn.getAttribute("data-channel") || "";
+        searchInput.value = (searchInput.value.trim().toLowerCase() === chName.trim().toLowerCase()) ? "" : chName;
+        filterActionTable(data.target);
+        return;
+      }
 
-        let nextIndex = currentIndex;
-        if (e.key === "ArrowUp") {
-          nextIndex = Math.max(0, currentIndex - 1);
-        } else if (e.key === "ArrowDown") {
-          nextIndex = Math.min(rows.length - 1, currentIndex + 1);
-        } else if (e.key === "PageUp") {
-          nextIndex = Math.max(0, currentIndex - 5);
-        } else if (e.key === "PageDown") {
-          nextIndex = Math.min(rows.length - 1, currentIndex + 5);
-        } else if (e.key === "Home") {
-          nextIndex = 0;
-        } else if (e.key === "End") {
-          nextIndex = rows.length - 1;
-        }
+      const clickedRow = e.target.closest("tr[data-action-idx]");
+      if (!clickedRow) return;
+      container.focus();
+      activateRow(clickedRow, false);
+    });
 
-        if (nextIndex !== currentIndex) {
-          e.preventDefault(); // Prevent standard page viewport scrolling
-          activateRow(rows[nextIndex], true); // Keyboard move: auto-scroll to view
-        }
-      });
-    }
+    container.addEventListener("keydown", function(e) {
+      const navKeys = ["ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown", "Enter", " "];
+      if (!navKeys.includes(e.key)) return;
+
+      const visibleRows = Array.from(tbody.querySelectorAll("tr[data-action-idx]")).filter(r => r.style.display !== "none");
+      if (!visibleRows.length) return;
+
+      let currentIndex = visibleRows.findIndex(r => r.style.fontWeight === "bold");
+      if (currentIndex === -1) currentIndex = 0;
+
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        visibleRows[currentIndex].click();
+        return;
+      }
+
+      let nextIndex = currentIndex;
+      if (e.key === "ArrowUp") nextIndex = Math.max(0, currentIndex - 1);
+      else if (e.key === "ArrowDown") nextIndex = Math.min(visibleRows.length - 1, currentIndex + 1);
+      else if (e.key === "PageUp") nextIndex = Math.max(0, currentIndex - 5);
+      else if (e.key === "PageDown") nextIndex = Math.min(visibleRows.length - 1, currentIndex + 5);
+      else if (e.key === "Home") nextIndex = 0;
+      else if (e.key === "End") nextIndex = visibleRows.length - 1;
+
+      if (nextIndex !== currentIndex) {
+        e.preventDefault();
+        activateRow(visibleRows[nextIndex], true);
+      }
+    });
   }
 }
 
@@ -1063,15 +1166,23 @@ function setTableDisabled(targetId, isDisabled) {
   const targetLabel = document.getElementById(targetId);
   if (!targetLabel) return;
 
+  if (targetLabel.dataset.isIr !== "1" && targetLabel.dataset.isPo !== "1") {
+    window.z2sActionEditActive = Boolean(isDisabled);
+  }
+
   const container = targetLabel.querySelector("div[tabindex]");
+  const searchBar = targetLabel.querySelector(".table-search-bar");
+  const searchInput = targetLabel.querySelector(".table-search-input");
   const badge = targetLabel.querySelector(".table-status-badge");
 
   if (isDisabled) {
     if (container) {
       container.classList.add("table-disabled");
-      container.setAttribute("tabindex", "-1"); // Disable keyboard nav
+      container.setAttribute("tabindex", "-1");
       container.blur();
     }
+    if (searchBar) searchBar.classList.add("table-disabled");
+    if (searchInput) searchInput.disabled = true;
     if (badge) {
       badge.textContent = "Locked";
       badge.className = "table-status-badge badge-locked";
@@ -1079,53 +1190,83 @@ function setTableDisabled(targetId, isDisabled) {
   } else {
     if (container) {
       container.classList.remove("table-disabled");
-      container.setAttribute("tabindex", "0");  // Enable keyboard nav
+      container.setAttribute("tabindex", "0");
     }
+    if (searchBar) searchBar.classList.remove("table-disabled");
+    if (searchInput) searchInput.disabled = false;
     if (badge) {
       badge.textContent = "Active";
       badge.className = "table-status-badge badge-active";
     }
   }
+
+  [50, 150, 300].forEach(delay => {
+    setTimeout(() => {
+      if (typeof updateActionThresholdsVisibility === "function") updateActionThresholdsVisibility();
+      if (typeof syncSubactionDropdown === "function") syncSubactionDropdown();
+    }, delay);
+  });
 }
 
-function highlightActionRow(data) {
+function highlightActionRow(data, shouldScroll = true) {
   const targetLabel = document.getElementById(data.target);
   if (!targetLabel) return;
 
-  // Select all table rows inside the tbody of your target label
-  const rows = targetLabel.querySelectorAll("tbody tr");
-  
-  rows.forEach((row, index) => {
-    if (index === data.s) {
-  		row.style.backgroundColor = "rgba(0, 123, 255, 0.2)";
-  		row.style.fontWeight = "bold";
-			row.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  		// row.style.color = "white"; 
-		} else {
-  		row.style.backgroundColor = "";
-  		row.style.fontWeight = "normal";
-  		// row.style.color = ""; 
-		}
-	});
+  const rows = targetLabel.querySelectorAll("tbody tr[data-action-idx]");
+  rows.forEach((row) => {
+    const rowIdx = parseInt(row.getAttribute("data-action-idx"));
+    if (rowIdx === data.s) {
+      row.style.backgroundColor = "rgba(0, 123, 255, 0.2)";
+      row.style.fontWeight = "bold";
+      if (shouldScroll && row.style.display !== "none") {
+        row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    } else {
+      row.style.backgroundColor = "";
+      row.style.fontWeight = "normal";
+    }
+  });
 }
 
 function editActionRow(data) {
   const targetLabel = document.getElementById(data.target);
   if (!targetLabel) return;
 
-  const rows = targetLabel.querySelectorAll("tbody tr");
+  const isIr = targetLabel.dataset.isIr === "1";
+  const isPo = targetLabel.dataset.isPo === "1";
+  const rows = targetLabel.querySelectorAll("tbody tr[data-action-idx]");
   
   if (data.idx < rows.length) {
     const cells = rows[data.idx].querySelectorAll("td");
-    
     data.d.forEach((newCellContent, i) => {
       if (cells[i]) {
-        cells[i].innerHTML = newCellContent;
-        cells[i].title = newCellContent; // Updates tooltip dynamically
+        cells[i].innerHTML = formatActionTableCell(newCellContent, i, isIr, isPo);
+        cells[i].title = String(newCellContent);
       }
     });
+
+    if ((isIr || isPo) && data.d && data.d.length >= 2) {
+      const slotId = parseInt(String(data.d[0]).replace('#', ''), 10);
+      const newLabel = `${data.d[0]} - ${data.d[1]}`;
+      const targetList = isIr ? window.z2sIrOptions : window.z2sPoOptions;
+
+      if (targetList && !isNaN(slotId)) {
+        const item = targetList.find(opt => opt.id === slotId);
+        if (item) {
+          item.label = newLabel;
+        } else {
+          // Jeśli jakimś cudem nie było go na liście, dodaj
+          targetList.push({ id: slotId, label: newLabel });
+        }
+        // Jeśli formularz akcji jest otwarty, odśwież opcje na liście rozwijanej
+        syncSubactionDropdown();
+      }
+    }
+
+    filterActionTable(data.target);
   }
 }
+
 
 const originalParse = JSON.parse;
 
@@ -1168,6 +1309,13 @@ JSON.parse = function(text, reviver) {
   }
   
   // Normal ESPUI message passthrough
+  if (window.z2sActionEditActive) {
+    clearTimeout(window.z2sSyncTimer);
+    window.z2sSyncTimer = setTimeout(() => {
+      if (typeof updateActionThresholdsVisibility === "function") updateActionThresholdsVisibility();
+      if (typeof syncSubactionDropdown === "function") syncSubactionDropdown();
+    }, 30);
+  }
   return data;
 };
 
@@ -1280,20 +1428,20 @@ const originalButtonClick = window.buttonclick;
 
 window.buttonclick = function(number, isdown) {
   
-  if (number == 56) {
+  if (number == 34) {
     if (isdown) return;
     
-    backupAndContinue("btn56");
+    backupAndContinue("btn34");
     return; 
   }
 
-  if (number == 52) {
+  if (number == 30) {
     if (isdown) return;
-    backupAndRedirectToOTA("btn52");
+    backupAndRedirectToOTA("btn30");
     return;
   }
 
-  if (number == 53) {
+  if (number == 31) {
     if (isdown) return;
     redirect2ZigbeeOTA();
     return;
@@ -1301,6 +1449,194 @@ window.buttonclick = function(number, isdown) {
 
   originalButtonClick(number, isdown);
 };
+
+function updateActionThresholdsVisibility() {
+  // Znajdź selektor eventu po pierwszym option "Select source event..."
+  const allSelects = document.querySelectorAll("select");
+  let eventSelect = null;
+  for (const sel of allSelects) {
+    if (sel.options.length > 0 && sel.options[0].text.includes("Select source event")) {
+      eventSelect = sel;
+      break;
+    }
+  }
+  if (!eventSelect) return;
+
+  const panel = eventSelect.closest(".panel") || eventSelect.parentElement.parentElement;
+  if (!panel) return;
+
+  let thresh1Wrap = null;
+  let thresh2Wrap = null;
+
+  panel.querySelectorAll("input[type='text']").forEach(inp => {
+    const wrap = inp.parentElement;
+    if (!wrap) return;
+    const labelText = wrap.textContent.toLowerCase();
+    if (labelText.includes("main threshold")) thresh1Wrap = wrap;
+    else if (labelText.includes("secondary threshold")) thresh2Wrap = wrap;
+  });
+
+  if (!thresh1Wrap || !thresh2Wrap) return;
+
+  const val = parseInt(eventSelect.value);
+  const selectedText = eventSelect.options[eventSelect.selectedIndex]
+    ? eventSelect.options[eventSelect.selectedIndex].text.toLowerCase()
+    : "";
+
+  const isCondition = !isNaN(val) && val >= 0xFFFF;
+  const needsSecondThreshold = isCondition && (
+    selectedText.includes("between")
+  );
+
+  thresh1Wrap.style.display = isCondition ? "" : "none";
+  thresh2Wrap.style.display = needsSecondThreshold ? "" : "none";
+}
+
+function syncSubactionDropdown() {
+  // action_subaction_number z C++ ma swój unikalny ID przypisany przez ESPUI,
+  // ale możemy też łatwo znaleźć input po jego klasie/rodzicu lub powiązanym labelu.
+  const panel = document.querySelector("select");
+  if (!panel) return;
+
+  // Znajdź input subaction bezpośrednio w dokumencie
+  let subInput = document.getElementById("text" + (typeof action_subaction_number !== 'undefined' ? action_subaction_number : 9999)) ||
+                 document.getElementById("num" + (typeof action_subaction_number !== 'undefined' ? action_subaction_number : 9999));
+
+  // Fallback: szukaj po etykiecie "Subaction ID" jeśli zmienna C++ nie jest widoczna w globalnym scope JS
+  if (!subInput) {
+    document.querySelectorAll("input").forEach(inp => {
+      const wrap = inp.closest(".panel") || inp.parentElement;
+      if (wrap && wrap.textContent.includes("Subaction ID")) {
+        subInput = inp;
+      }
+    });
+  }
+  if (!subInput) return;
+
+  // Znajdź selektor akcji docelowych
+  const allSelects = document.querySelectorAll("select");
+  let actionSelect = null;
+  for (const sel of allSelects) {
+    if (sel.options.length > 0 && sel.options[0].text.includes("Select destination action")) {
+      actionSelect = sel;
+      break;
+    }
+  }
+  if (!actionSelect) return;
+
+  // Iniekcja stylów wymuszających ciemny tekst i ukrywanie
+  if (!document.getElementById("z2s-subaction-css")) {
+    const st = document.createElement("style");
+    st.id = "z2s-subaction-css";
+    st.textContent = `
+      .z2s-force-hidden { display: none !important; }
+      .subaction-helper-select,
+      .subaction-helper-select option {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        color: #212529 !important;
+        background-color: #ffffff !important;
+      }
+      .subaction-helper-select:disabled {
+        opacity: 0.5 !important;
+        pointer-events: none !important;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  const isFormDisabled = !window.z2sActionEditActive || subInput.disabled || actionSelect.disabled;
+  const selectedActionText = (!isFormDisabled && actionSelect.selectedIndex >= 0 && actionSelect.options[actionSelect.selectedIndex])
+    ? actionSelect.options[actionSelect.selectedIndex].text.toUpperCase()
+    : "";
+
+  const isIrMode = selectedActionText.includes("SEND IR CODE");
+  const isPoMode = selectedActionText.includes("SEND PUSHOVER MESSAGE");
+
+  let helperSelect = subInput.parentElement.querySelector(".subaction-helper-select");
+  if (!helperSelect) {
+    helperSelect = document.createElement("select");
+    helperSelect.className = (actionSelect.className + " subaction-helper-select z2s-force-hidden").trim();
+    subInput.insertAdjacentElement("afterend", helperSelect);
+
+    helperSelect.addEventListener("change", function() {
+      subInput.value = this.value;
+      const numId = subInput.id.replace(/^(num|text)/, "");
+      if (typeof numberchange === "function" && numId) {
+        numberchange(numId);
+      } else {
+        subInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  }
+
+  if (isFormDisabled || (!isIrMode && !isPoMode)) {
+    helperSelect.value = "0";
+    helperSelect.disabled = true;
+    helperSelect.classList.add("z2s-force-hidden");
+    subInput.classList.remove("z2s-force-hidden");
+    return;
+  }
+
+  const optionsData = isIrMode ? (window.z2sIrOptions || []) : (window.z2sPoOptions || []);
+  const placeholder = isIrMode ? "Select IR code (sid)..." : "Select Pushover message (sid)...";
+  const currentVal = String(subInput.value || "0");
+
+  let html = `<option value="0">${placeholder}</option>`;
+  if (optionsData.length === 0) {
+    html += `<option value="${currentVal}" selected>No saved items (sid: ${currentVal})</option>`;
+  } else {
+    optionsData.forEach(opt => {
+      const selected = String(opt.id) === currentVal ? " selected" : "";
+      const safeLabel = opt.label.replace(/"/g, "&quot;");
+      html += `<option value="${opt.id}"${selected}>${safeLabel}</option>`;
+    });
+  }
+
+  helperSelect.innerHTML = html;
+  helperSelect.disabled = false;
+
+  // Bezwzględnie ukrywamy oryginał i pokazujemy nasz select
+  subInput.classList.add("z2s-force-hidden");
+  helperSelect.classList.remove("z2s-force-hidden");
+}
+
+document.addEventListener("change", function(e) {
+  if (e.target && e.target.tagName === "SELECT" && !e.target.classList.contains("subaction-helper-select")) {
+    updateActionThresholdsVisibility();
+    syncSubactionDropdown();
+    setTimeout(syncSubactionDropdown, 150);
+    setTimeout(syncSubactionDropdown, 350);
+  }
+});
+
+const origUpdateSelectOptions = updateSelectOptions;
+updateSelectOptions = function(...args) {
+  origUpdateSelectOptions.apply(this, args);
+  setTimeout(() => {
+    updateActionThresholdsVisibility();
+    syncSubactionDropdown();
+  }, 50);
+};
+
+window.addEventListener("beforeunload", function() {
+  if (typeof websock !== "undefined" && websock && websock.readyState === WebSocket.OPEN) {
+    websock.close();
+  }
+});
+
+window.addEventListener("load", function() {
+  setTimeout(function checkSync() {
+    const anySelect = document.querySelector("select");
+    // Jeśli selektory już są w DOM, ale mają 0 opcji (nie dotarł gui_cmd_synchronize_all)
+    if (anySelect && anySelect.options.length === 0) {
+      console.log("[Z2S Watchdog] Selectors empty after reload, requesting sync...");
+      if (typeof websock !== "undefined" && websock && websock.readyState === WebSocket.OPEN) {
+        websock.send("uicc:1"); 
+      }
+    }
+  }, 1200);
+});
 
 )=====";
 
@@ -1378,6 +1714,7 @@ void addLocalChannelCallback(
 void addSwitchbotCallback(BasicControl *sender, int type, void *param);
 void saveSwitchbotCallback(BasicControl *sender, int type, void *param);
 void pushoverMessagesCallback(BasicControl *sender, int type, void *param);
+void pushoverMessagesCallbackMain(int32_t flag);
 void hiddenNumberCallback(BasicControl *sender, int type, void *param);
 
 void enableControlStyle(uint16_t control_id, bool enable);
@@ -1396,6 +1733,19 @@ void fillMemoryUptimeInformation(char *buf, uint16_t buf_max_len = 512);
 
 void updateActionSummary(z2s_channel_action_t &new_action);
 
+void irDeviceSelectorCallback(BasicControl *sender, int type, void *param);
+void irCodesTableCallback(BasicControl *sender, int type, void *param);
+void irDeviceSelectorCmd(int32_t device_slot);
+
+static bool appendEscapedJsonString(
+  char *buf, size_t bufSize, size_t &offset, const char *str);
+
+void buildPushoverMessagesTableJsonPayload(
+  uint16_t ui_label_id, int target_message_index);
+void enablePushoverTable(bool enable);
+void updatePushoverMessageButtons();
+void sendPushoverMessageRowEdit(uint16_t ui_label_id, int target_row_index);
+
 /*****************************************************************************/
 
 bool new_connect = false;
@@ -1403,7 +1753,26 @@ bool new_connect = false;
 void onWsConnectCallback() {
 
 	log_i("onWsConnectCallback");
+
 	new_connect = true;
+}
+
+/*****************************************************************************/
+
+void onWsCustomCmdCallback(uint16_t ws_custom_cmd) {
+
+	log_i("onWsCustomCmdCallback %u", ws_custom_cmd);
+
+	switch (ws_custom_cmd) {
+
+
+		case 1:
+		
+			addGUICommand(gui_cmd_synchronize_all);
+		break;
+	}
+
+	
 }
 
 /*****************************************************************************/
@@ -1875,20 +2244,10 @@ void buildGatewayTabGUI() {
 	  Control::Type::Tab, empty_str, "Gateway", Control::Color::Dark,
 	  Control::noParent, generalCallback);
 
-	/*gui_cmd_hidden_label = ESPUI.addControl(
-	  Control::Type::Label, empty_str, empty_str, Control::Color::Dark,
-	  gatewaytab);*/
-
 	gui_cmd_hidden_response_number = ESPUI.addControl(
 	  Control::Type::Number, empty_str, (long int)0,
 	  Control::Color::Dark, gatewaytab, hiddenNumberCallback);
 
-	/*log_i(
-	  "gui_cmd_hidden_label = %u, gui_cmd_hidden_response_number = %u",
-	  gui_cmd_hidden_label, gui_cmd_hidden_response_number);*/
-
-	//ESPUI.updateVisibility(gui_cmd_hidden_label, false);
-	//ESPUI.updateVisibility(gui_cmd_hidden_response_number, false);
 	ESPUI.setPanelStyle(gui_cmd_hidden_response_number, "display: none;");
 
 	ESPUI.addControl(
@@ -1929,133 +2288,102 @@ void buildGatewayTabGUI() {
 	  "font-weight: normal;");
 	ESPUI.setPanelWide(gateway_memory_info, true);
 
-	/*auto gui_mode_selector = ESPUI.addControl(
-		Control::Type::Select, "Select GUI mode (requires restart)", 
-		(long int) 0, Control::Color::Dark, gatewaytab, selectGuiModeCallback);
+	auto gateway_settings_label = ESPUI.addControl(
+	  Control::Type::Label, "Gateway settings", empty_str, Control::Color::Dark,
+		gatewaytab);
 
-	for (uint8_t modes_counter = no_gui_mode; 
-			 modes_counter < gui_modes_number; modes_counter++) {
+	ESPUI.setElementStyle(gateway_settings_label, clearLabelStyle);
 
-  	working_str = modes_counter;
-		ESPUI.addControl(
-			Control::Type::Option, GUI_MODE_OPTIONS[modes_counter], modes_counter, 
-			Control::Color::None, gui_mode_selector);
-	}*/
+	gateway_mdns_name_text = ESPUI.addControl(
+	  Control::Type::Text, 
+		"Gateway local mDNS name - max. 11 characters, no spaces!", emptyString,
+	  Control::Color::Dark, gateway_settings_label, generalCallback);
 
-	//auto build_gateway_switcher = ESPUI.addControl(
-	//		Control::Type::Switcher, empty_str, (long)1, Control::Color::Dark,
-	//		gatewaytab);
+	ESPUI.getControl(gateway_mdns_name_text)->reserve(12);
+
+	ESPUI.setElementStyle(
+		gateway_mdns_name_text,"width: 30%; min-width: 220px; "
+		"margin-bottom: 10px;");
+
+	auto gateway_mdns_name_save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+	  gateway_settings_label, gatewayCallback,
+	  (void *)GUI_CB_SAVE_MDNS_NAME_FLAG);
+	
+	//addEmptyLineLabel(gateway_settings_label);
+
+	ESPUI.setElementStyle(
+		gateway_mdns_name_save_button, 
+		"width: 10%; min-width: 80px; margin: 0 7% 10px 3%;");
+
+		auto_connection_reset_timeout_number = ESPUI.addControl(
+	  Control::Type::Number, "Automatic connection reset timeout (s) -"
+		" enter 0 to disable this function.",
+	  (long int)0, Control::Color::Dark, gateway_settings_label, 
+		generalMinMaxCallback, (void *)3600);
+
+	ESPUI.setElementStyle(
+		auto_connection_reset_timeout_number,"width: 30%; min-width: 220px; "
+		"margin-bottom: 10px;");
+
+	auto auto_connection_reset_timeout_save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+	  gateway_settings_label, gatewayCallback, (void *)GUI_CB_ACR_TIMEOUT_FLAG);
+
+	ESPUI.setElementStyle(
+		auto_connection_reset_timeout_save_button, 
+		"width: 10%; min-width: 80px; margin: 0 7% 10px 3%;");
+
+	force_config_switcher = ESPUI.addControl(
+	  Control::Type::Switcher, "Force config mode on next gateway restart.",
+	  (long int)0, Control::Color::Dark, gateway_settings_label, 
+		gatewayCallback, (void *)GUI_CB_FORCE_CONFIG_FLAG);
+
+	use_new_at_model_switcher = ESPUI.addControl(
+	  Control::Type::Switcher, "Use new AT model for smart buttons - "
+		"new ones will add as AT with Cloud and local actions.",
+		(long int)0, Control::Color::Dark, gateway_settings_label, 
+		gatewayCallback, (void *)GUI_CB_USE_NEW_AT_FLAG);
+
+	
+	ESPUI.setPanelWide(gateway_settings_label, true);
+	//ESPUI.setPanelStyle(gateway_settings_label, "text-align: left;")
 
 	auto build_gateway_switcher = addClearLabel(
 	  "Select GUI tabs (requires restart)", gatewaytab);
 	addEmptyLineLabel(build_gateway_switcher);
 
-	//enableControlStyle(build_gateway_switcher, false);
+	uint16_t gui_build_control_flags = _gui_build_flags ? _gui_build_flags : 
+		Z2S_getGUIBuildControlFlags((gui_modes_t)_enable_gui_on_start);
 
-	uint16_t gui_build_control_flags = _gui_build_flags ? _gui_build_flags : Z2S_getGUIBuildControlFlags((gui_modes_t)_enable_gui_on_start);
-
-	for (uint8_t gui_build_flag_bit = 1; gui_build_flag_bit < 12;
+	for (uint8_t gui_build_flag_bit = 1; gui_build_flag_bit < 13;
 	     gui_build_flag_bit++) {
 
 		ESPUI.addControl(
-		  Control::Type::Switcher, empty_str, (gui_build_control_flags & (1 << gui_build_flag_bit)) ? (long)1 : (long)0, Control::Color::Dark,
-		  build_gateway_switcher, switchGUIBuildFlagCallback,
-		  (void *)gui_build_flag_bit);
-
-		addFlagsLabel(
-		  GUI_BUILD_FLAGS_NAMES[gui_build_flag_bit], build_gateway_switcher);
-		addEmptyLineLabel(build_gateway_switcher);
+		  Control::Type::Switcher, GUI_BUILD_FLAGS_NAMES[gui_build_flag_bit], 
+			(gui_build_control_flags & (1 << gui_build_flag_bit)) ? (long)1 : 
+			(long)0, Control::Color::Dark, build_gateway_switcher, 
+			switchGUIBuildFlagCallback, (void *)gui_build_flag_bit);
 	}
-	/*addClearLabel(
-		"When GUI is disabled on start use 5x BOOT to enable it.", 
-		build_gateway_switcher);*/
+	addEmptyLineLabel(build_gateway_switcher);
 
 	gui_start_delay_number = ESPUI.addControl(
 	  Control::Type::Number, "GUI start delay (s)", (long int)0,
-	  Control::Color::Dark, gatewaytab, generalMinMaxCallback, (void *)3600);
+	  Control::Color::Dark, build_gateway_switcher, generalMinMaxCallback, 
+		(void *)3600);
 
 	auto gui_start_delay_save_button = ESPUI.addControl(
 	  Control::Type::Button, empty_str, "SAVE",
-	  Control::Color::Dark, gui_start_delay_number, gatewayCallback,
+	  Control::Color::Dark, build_gateway_switcher, gatewayCallback,
 	  (void *)GUI_CB_GUI_DELAY_FLAG);
 
-	auto_connection_reset_timeout_number = ESPUI.addControl(
-	  Control::Type::Number, "Automatic connection reset timeout (s)",
-	  (long int)0,
-	  Control::Color::Dark, gatewaytab, generalMinMaxCallback, (void *)3600);
-
-	auto auto_connection_reset_timeout_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  auto_connection_reset_timeout_number, gatewayCallback,
-	  (void *)GUI_CB_ACR_TIMEOUT_FLAG);
-
-	addClearLabel(
-	  "Setting this value to 0 s disables automatic connection reset.",
-	  auto_connection_reset_timeout_number);
-
-	gateway_mdns_name_text = ESPUI.addControl(
-	  Control::Type::Text, "Gateway local mDNS name", emptyString,
-	  Control::Color::Dark, gatewaytab, generalCallback);
-	ESPUI.getControl(gateway_mdns_name_text)->reserve(12);
-
-	auto gateway_mdns_name_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  gateway_mdns_name_text, gatewayCallback,
-	  (void *)GUI_CB_SAVE_MDNS_NAME_FLAG);
+	ESPUI.setElementStyle(
+		gui_start_delay_number,"width: 70%; min-width: 220px; "
+		"margin-bottom: 10px;");
 
 	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, "(max. 11 characters, no spaces!!!)",
-	    Control::Color::None, gateway_mdns_name_text),
-	  clearLabelStyle);
-
-	force_config_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, "Force config mode on next startup",
-	  (long int)0, Control::Color::Dark, gatewaytab, gatewayCallback,
-	  (void *)GUI_CB_FORCE_CONFIG_FLAG);
-
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, "On next startup gateway will enter "
-	                                     "config mode.",
-	    Control::Color::None, force_config_switcher),
-	  clearLabelStyle);
-
-	/*rebuild_Supla_channels_switcher = ESPUI.addControl(
-		Control::Type::Switcher, 
-		"Rebuild missing Supla channels on next startup", 
-		(long int)0, Control::Color::Dark, gatewaytab, gatewayCallback,
-		(void*)GUI_CB_REBUILD_CHANNELS_FLAG);
-
-	working_str_ptr = 
-		"On next startup gateway will try to rebuild missing Supla channels<br>"
-		"using existing Zigbee devices definitions (experimental!)";
-
-	ESPUI.setElementStyle(
-		ESPUI.addControl(
-			Control::Type::Label, empty_str, working_str_ptr, 
-			Control::Color::None, rebuild_Supla_channels_switcher), 
-		clearLabelStyle);*/
-
-	use_new_at_model_switcher = ESPUI.addControl(
-	  Control::Type::Switcher,
-	  "Use new AT model for smart buttons",
-	  (long int)0, Control::Color::Dark, gatewaytab, gatewayCallback,
-	  (void *)GUI_CB_USE_NEW_AT_FLAG);
-
-
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str,
-	    "New smart buttons will add as AT with Cloud and local actions",
-	    Control::Color::None, use_new_at_model_switcher),
-	  clearLabelStyle);
-
-	/**/
-
-	save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Restart gateway", Control::Color::Dark,
-	  gatewaytab, gatewayCallback, (void *)GUI_CB_GUI_RESTART_FLAG);
+		gui_start_delay_save_button, 
+		"width: 10%; min-width: 80px; margin: 0 7% 10px 3%;");
 
 	auto web_ota_button = ESPUI.addControl(
 	  Control::Type::Button, empty_str, "Gateway firmware update",
@@ -2082,17 +2410,18 @@ void buildGatewayTabGUI() {
 	  Control::Color::Dark, web_ota_button);
 	ESPUI.getControl(github_ota_info_label)->reserve(60);
 
-	//ESPUI.updateNumber(enable_gui_switcher, _enable_gui_on_start);
-	working_str = _enable_gui_on_start;
-	//ESPUI.updateSelect(gui_mode_selector, _enable_gui_on_start);
+	addEmptyLineLabel(web_ota_button);
+
+	save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Restart gateway", Control::Color::Dark,
+	  web_ota_button, gatewayCallback, (void *)GUI_CB_GUI_RESTART_FLAG);
+
 	ESPUI.updateNumber(gui_start_delay_number, _gui_start_delay);
 	ESPUI.updateNumber(
 	  auto_connection_reset_timeout_number, _auto_connection_reset_timeout);
 	working_str = GatewayMDNSLocalName;
 	ESPUI.updateText(gateway_mdns_name_text, working_str);
 	ESPUI.updateNumber(force_config_switcher, _force_config_on_start);
-	//ESPUI.updateNumber(
-	//	rebuild_Supla_channels_switcher, _rebuild_Supla_channels_on_start);
 	ESPUI.updateNumber(use_new_at_model_switcher, _use_new_at_model);
 	enableControlStyle(github_ota_button, false);
 }
@@ -2172,71 +2501,53 @@ void buildCredentialsGUI() {
 void buildZigbeeTabGUI() {
 
 	char *working_str_ptr = "ZigBee settings";
+
 	auto zigbeetab = ESPUI.addControl(
 	  Control::Type::Tab, empty_str, working_str_ptr,
 	  Control::Color::Dark, Control::noParent, onZigbeeTabCallback);
 
+	auto zigbee_settings_label = ESPUI.addControl(
+	  Control::Type::Label, "ZigBee network settings", empty_str, 
+		Control::Color::Dark, zigbeetab);
+
+	ESPUI.setElementStyle(zigbee_settings_label, clearLabelStyle);
+
 	pairing_mode_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, "Pairing mode",
-	  (long int)0, Control::Color::Dark, zigbeetab,
-	  pairingSwitcherCallback, (void *)GUI_CB_PAIRING_FLAG);
+	  Control::Type::Switcher, "Pairing mode (disable/enable for 180 s)",
+		(long int)0, Control::Color::Dark,zigbee_settings_label, 
+		pairingSwitcherCallback, (void *)GUI_CB_PAIRING_FLAG);
 
-	working_str_ptr = "enable/disable pairing mode (180 s)";
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, pairing_mode_switcher),
-	  clearLabelStyle);
+	zigbee_tx_power_number = ESPUI.addControl(
+	  Control::Type::Number, "Zigbee TX power (-15...20)", (long int)0,
+	  Control::Color::Dark, zigbee_settings_label, generalCallback);
 
-	force_leave_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, pairing_mode_switcher,
-	  pairingSwitcherCallback, (void *)GUI_CB_FORCE_LEAVE_FLAG);
-
-	working_str_ptr = "Force device to bind gateway again";
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, pairing_mode_switcher),
-	  clearLabelStyle);
-
-
-	working_str = zigbee_tx_power_text_str;
-	zigbee_tx_power_text = ESPUI.addControl(
-	  Control::Type::Text, "Zigbee TX power", working_str,
-	  Control::Color::Dark, zigbeetab, generalCallback);
-
-	//working_str = zigbee_primary_channel_text_str;
-	zigbee_primary_channel_text = ESPUI.addControl(
-	  Control::Type::Number, "Zigbee primary channel", (long int)0,
-	  Control::Color::Dark, zigbeetab, generalCallback);
-
-	working_str_ptr = "Read";
 	auto zigbee_get_tx_power_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, zigbee_tx_power_text,
-	  generalZigbeeCallback, (void *)GUI_CB_GET_TX_FLAG);
+	  Control::Type::Button, empty_str, "Read",Control::Color::Dark, 
+		zigbee_settings_label, generalZigbeeCallback, (void *)GUI_CB_GET_TX_FLAG);
+
+	auto zigbee_set_tx_power_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Update",Control::Color::Dark, 
+		zigbee_settings_label, generalZigbeeCallback, (void *)GUI_CB_SET_TX_FLAG);
+
+	zigbee_primary_channel_text = ESPUI.addControl(
+	  Control::Type::Number, "Zigbee primary channel (11...26)", (long int)0,
+	  Control::Color::Dark, zigbee_settings_label, generalCallback);
 
 	auto zigbee_get_primary_channel_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, zigbee_primary_channel_text,
+	  Control::Type::Button, empty_str, "Read",
+	  Control::Color::Dark, zigbee_settings_label,
 	  generalZigbeeCallback, (void *)GUI_CB_GET_PC_FLAG);
-
-	working_str_ptr = "Update";
-	auto zigbee_set_tx_power_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, zigbee_tx_power_text, generalZigbeeCallback,
-	  (void *)GUI_CB_SET_TX_FLAG);
-
+	
 	auto zigbee_set_primary_channel_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, zigbee_primary_channel_text,
+	  Control::Type::Button, empty_str, "Update",
+	  Control::Color::Dark, zigbee_settings_label,
 	  generalZigbeeCallback, (void *)GUI_CB_SET_PC_FLAG);
 
-	working_str_ptr = zigbee_primary_channel_info_str;
 	zigbee_primary_channel_label = ESPUI.addControl(
-	  Control::Type::Label, "Zigbee primary channel", working_str_ptr,
-	  Control::Color::Dark, zigbee_primary_channel_text);
+	  Control::Type::Label, empty_str, empty_str, Control::Color::Dark, 
+		zigbee_settings_label);
+
+	ESPUI.setElementStyle(zigbee_primary_channel_label, clearLabelStyle);
 
 	working_str = three_dots_str;
 	zigbee_last_binding_result_label = ESPUI.addControl(
@@ -2266,7 +2577,8 @@ void buildZigbeeTabGUI() {
 	  Control::Color::Dark, zigbee_installation_code_ieee_address,
 	  generalZigbeeCallback, (void *)GUI_CB_CLEAR_INSTALLATION_CODES_FLAG);
 
-	ESPUI.addControl(Control::Type::Separator, "Zigbee stack factory reset",
+	ESPUI.addControl(
+		Control::Type::Separator, "Zigbee stack factory reset",
 	                 empty_str, Control::Color::None, zigbeetab);
 
 	factory_reset_switcher = ESPUI.addControl(
@@ -2284,10 +2596,10 @@ void buildZigbeeTabGUI() {
 	  Control::Color::Alizarin, zigbeetab, generalZigbeeCallback,
 	  (void *)GUI_CB_FACTORY_FLAG);
 
+	ESPUI.setElementStyle(factory_reset_label, clearLabelStyle);
+
 	ESPUI.updateNumber(
 	  pairing_mode_switcher, Zigbee.isNetworkOpen() ? 1 : 0);
-	ESPUI.updateNumber(
-	  force_leave_switcher, force_leave_global_flag ? 1 : 0);
 }
 
 /*****************************************************************************/
@@ -2353,79 +2665,57 @@ void buildDevicesTabGUI() {
 	  Control::Type::Label, empty_str, working_str,
 	  Control::Color::Dark, getswbuild_button);
 
+	battery_panel_label = ESPUI.addControl(
+	  Control::Type::Label, "Battery panel", empty_str,Control::Color::None,
+		 devicestab);
+
+	ESPUI.setElementStyle(battery_panel_label, clearLabelStyle);
+
 	battery_voltage_min_number = ESPUI.addControl(
-	  Control::Type::Number, "Battery panel", (long int)0,
-	  Control::Color::Dark, devicestab, generalMinMaxCallback, (void *)255);
+	  Control::Type::Number, "V(min) x10, ie. 28 = 2,8V", (long int)0,
+		Control::Color::Dark, battery_panel_label, generalMinMaxCallback, 
+		(void *)255);
 
 	ESPUI.setElementStyle(
-	  battery_voltage_min_number, "color:white; margin: 0% 5%;");
+	  battery_voltage_min_number, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
-	working_str_ptr = "Save";
 	battery_voltage_min_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, battery_voltage_min_number, batteryCallback,
-	  (void *)GUI_CB_BATTERY_VOLTAGE_MIN_FLAG);
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark, 
+		battery_panel_label, batteryCallback,
+		(void *)GUI_CB_BATTERY_VOLTAGE_MIN_FLAG);	
 
+	ESPUI.setElementStyle(
+	  battery_voltage_min_save_button, 
+		"width: 10%; min-width: 60px; margin: 0 7% 10px 3%;");
 
 	battery_voltage_max_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0,
-	  Control::Color::Dark, battery_voltage_min_number,
+	  Control::Type::Number, "V(max) x10, ie. 33 = 3,3V", (long int)0,
+	  Control::Color::Dark, battery_panel_label,
 	  generalMinMaxCallback, (void *)255);
 
 	ESPUI.setElementStyle(
-	  battery_voltage_max_number, "color:white; margin: 0% 5%;");
-
-
-	working_str_ptr = "Save";
+	  battery_voltage_max_number, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
+	
 	battery_voltage_max_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, working_str_ptr,
-	  Control::Color::Dark, battery_voltage_min_number,
-	  batteryCallback, (void *)GUI_CB_BATTERY_VOLTAGE_MAX_FLAG);
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark, 
+		battery_panel_label, batteryCallback, 
+		(void *)GUI_CB_BATTERY_VOLTAGE_MAX_FLAG);
 
-	addEmptyLineLabel(battery_voltage_min_number);
-
-	working_str_ptr = "&#10023; V(min) x10, ie. 28 = 2,8V &#10023;";
 	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, battery_voltage_min_number),
-	  clearFlagsLabelStyle);
-
-	working_str_ptr = "&#10023; V(max) x10, ie. 33 = 3,3V &#10023;";
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, battery_voltage_min_number),
-	  clearFlagsLabelStyle);
-
+	  battery_voltage_max_save_button, 
+		"width: 10%; min-width: 60px; margin: 0 7% 10px 3%;");
+	
 	disable_battery_percentage_msg_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, battery_voltage_min_number,
+	  Control::Type::Switcher, "<i>disable battery percentage messages</i>",
+		(long int)0, Control::Color::Dark, battery_panel_label,
 	  batterySwitcherCallback, (void *)GUI_CB_DISABLE_PERCENTAGE_MSG_FLAG);
 
-	working_str_ptr =
-	  "&#10023; <i>DISABLE BATTERY PERCENTAGE MESSAGES</i> &#10023;";
-
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, battery_voltage_min_number),
-	  clearLabelStyle);
-
 	disable_battery_voltage_msg_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, battery_voltage_min_number,
+	  Control::Type::Switcher, "<i>disable battery voltage messages</i>",
+		(long int)0, Control::Color::Dark, battery_panel_label,
 	  batterySwitcherCallback, (void *)GUI_CB_DISABLE_VOLTAGE_MSG_FLAG);
-
-	working_str_ptr =
-	  "&#10023; <i>DISABLE BATTERY VOLTAGE MESSAGES</i> &#10023;";
-
-	ESPUI.setElementStyle(
-	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, working_str_ptr,
-	    Control::Color::None, battery_voltage_min_number),
-	  clearLabelStyle);
-
 
 	ESPUI.addControl(
 	  Control::Type::Separator, empty_str, empty_str,
@@ -2601,52 +2891,75 @@ void buildChannelsTabGUI() {
 
 	ESPUI.setElementStyle(
 	  zb_channel_info_label, "color:white;  background-color: unset;"
-	                         "text-align: justify; font-family:tahoma; font-size: "
-	                         "4 px; font-style: normal; font-weight: normal;");
+		"text-align: justify; font-family:tahoma; font-size: "
+	  "4 px; font-style: normal; font-weight: normal;");
 	ESPUI.setPanelWide(zb_channel_info_label, true);
 
+	auto zb_channel_name_label = ESPUI.addControl(
+	  Control::Type::Label, "Channel description panel", empty_str,
+	  Control::Color::Dark, channelstab);
+
+	ESPUI.setElementStyle(zb_channel_name_label, clearLabelStyle);
+
 	channel_name_text = ESPUI.addControl(
-	  Control::Type::Text, "Channel description panel",
-	  emptyString, Control::Color::Dark, channelstab,
+	  Control::Type::Text, "Channel name (local)",
+	  emptyString, Control::Color::Dark, zb_channel_name_label,
 	  generalCallback);
 	ESPUI.getControl(channel_name_text)->reserve(33);
 
-	addClearLabel(
-	  "&#10023; channel name (local) &#10023;", channel_name_text);
+	ESPUI.setElementStyle(
+		channel_name_text,"width: 40%; min-width: 220px; "
+		"margin-bottom: 10px;");
+
+	//addClearLabel(	
+	//  "&#10023; channel name (local) &#10023;", channel_name_text);
 
 	channel_name_save_button = ESPUI.addControl(
 	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  channel_name_text, editChannelCallback,
+	  zb_channel_name_label, editChannelCallback,
 	  (void *)GUI_CB_UPDATE_CHANNEL_NAME_FLAG);
 
-	local_channel_function_selector = ESPUI.addControl(
-	  Control::Type::Select, empty_str, (long int)-1,
-	  Control::Color::Dark, channel_name_text,
-	  editChannelCallback, (void *)GUI_CB_UPDATE_LOCAL_CHANNEL_FUNCTION_FLAG);
+	ESPUI.setElementStyle(
+		channel_name_save_button, 
+		"width: 10%; min-width: 80px; margin: 0 7% 10px 3%;");
 
-	char *working_str_ptr =
-	  "here you can set channel flags (changes are saved immediately)";
+	local_channel_function_selector = ESPUI.addControl(
+	  Control::Type::Select, "Select local channel function", (long int)-1,
+	  Control::Color::Dark, zb_channel_name_label,
+	  editChannelCallback, (void *)GUI_CB_UPDATE_LOCAL_CHANNEL_FUNCTION_FLAG);
+	
+	ESPUI.setElementStyle(
+		local_channel_function_selector, 
+		"width: 40%; min-width: 220px; margin-bottom: 10px;");
+
+	ESPUI.setPanelWide(zb_channel_name_label, true);
+
 	zb_channel_flags_label = ESPUI.addControl(
-	  Control::Type::Label, "CHANNEL FLAGS", working_str_ptr,
+	  Control::Type::Label, "Channel custom flags", 
+		"here you can set channel flags (changes are saved immediately)",
 	  Control::Color::Dark, channelstab);
 
 	ESPUI.setElementStyle(zb_channel_flags_label, clearLabelStyle);
 
 	disable_channel_notifications_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label, editChannelFlagsCallback,
-	  (void *)GUI_CB_DISABLE_CHANNEL_NOTIFICATIONS_FLAG);
-	ESPUI.setElementStyle(
-	  disable_channel_notifications_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, "disable single channel notifications", 
+		(long int)0, Control::Color::Dark, zb_channel_flags_label, 
+		editChannelFlagsCallback, 
+		(void *)GUI_CB_DISABLE_CHANNEL_NOTIFICATIONS_FLAG);
+	
+	//ESPUI.setElementStyle(
+	//  disable_channel_notifications_switcher, "margin: 0% 15%;");
 
 	set_sorwns_on_start_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
-	  editChannelFlagsCallback, (void *)GUI_CB_SET_SORWNS_ON_START_FLAG);
-	ESPUI.setElementStyle(set_sorwns_on_start_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, "sensor starts in offline state<br>(NO REMOTE"
+		" WAKEUP SUPPORTED)", (long int)0, Control::Color::Dark, 
+		zb_channel_flags_label,editChannelFlagsCallback, 
+		(void *)GUI_CB_SET_SORWNS_ON_START_FLAG);
+	
+	//ESPUI.setElementStyle(set_sorwns_on_start_switcher, "margin: 0% 15%;");
 
 
-	ESPUI.setElementStyle(
+	/*ESPUI.setElementStyle(
 	  ESPUI.addControl(
 	    Control::Type::Label, empty_str, empty_str, Control::Color::None,
 	    zb_channel_flags_label),
@@ -2673,21 +2986,26 @@ void buildChannelsTabGUI() {
 	  ESPUI.addControl(
 	    Control::Type::Label, empty_str, empty_str,
 	    Control::Color::None, zb_channel_flags_label),
-	  clearLabelStyle);
+	  clearLabelStyle);*/
 
 	trv_auto_to_schedule_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
-	  editChannelFlagsCallback, (void *)GUI_CB_TRV_AUTO_TO_SCHEDULE_FLAG);
-	ESPUI.setElementStyle(trv_auto_to_schedule_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, 
+		"TRV AUTO mode => Supla schedule", (long int)0,Control::Color::Dark, 
+		zb_channel_flags_label,editChannelFlagsCallback, 
+		(void *)GUI_CB_TRV_AUTO_TO_SCHEDULE_FLAG);
+	
+	//ESPUI.setElementStyle(trv_auto_to_schedule_switcher, "margin: 0% 15%;");
 
 	trv_fixed_calibration_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
-	  editChannelFlagsCallback, (void *)GUI_CB_TRV_FIXED_CALIBRATION_FLAG);
-	ESPUI.setElementStyle(trv_fixed_calibration_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, 
+		"TRV fixed correction value <br>(ignores external thermometer "
+		"settings)", (long int)0,Control::Color::Dark, 
+		zb_channel_flags_label, editChannelFlagsCallback, 
+		(void *)GUI_CB_TRV_FIXED_CALIBRATION_FLAG);
+	
+	//ESPUI.setElementStyle(trv_fixed_calibration_switcher, "margin: 0% 15%;");
 
-	ESPUI.setElementStyle(
+	/*ESPUI.setElementStyle(
 	  ESPUI.addControl(
 	    Control::Type::Label, empty_str, empty_str,
 	    Control::Color::None, zb_channel_flags_label),
@@ -2695,8 +3013,8 @@ void buildChannelsTabGUI() {
 
 	ESPUI.setElementStyle(
 	  ESPUI.addControl(
-	    Control::Type::Label, empty_str, "&#10023; <i>TRV AUTO mode => Supla "
-	                                     "schedule</i> &#10023;",
+	    Control::Type::Label, empty_str, 
+			"&#10023; <i>TRV AUTO mode => Supla schedule</i> &#10023;",
 	    Control::Color::None, zb_channel_flags_label),
 	  clearFlagsLabelStyle);
 
@@ -2705,25 +3023,28 @@ void buildChannelsTabGUI() {
 	  "(ignores external thermometer settings)</i>",
 	  zb_channel_flags_label);
 
-	addEmptyLineLabel(zb_channel_flags_label);
+	addEmptyLineLabel(zb_channel_flags_label);*/
 
 	trv_auto_to_schedule_manual_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
-	  editChannelFlagsCallback, (void *)GUI_CB_TRV_AUTO_TO_SCHEDULE_MANUAL_FLAG);
-	ESPUI.setElementStyle(
-	  trv_auto_to_schedule_manual_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, 
+		"TRV AUTO mode =><br>Supla schedule/manual", (long int)0, 
+		Control::Color::Dark, zb_channel_flags_label, editChannelFlagsCallback, 
+		(void *)GUI_CB_TRV_AUTO_TO_SCHEDULE_MANUAL_FLAG);
+
+	//ESPUI.setElementStyle(
+	//  trv_auto_to_schedule_manual_switcher, "margin: 0% 15%;");
 
 	trv_cooperative_childlock_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
-	  editChannelFlagsCallback, (void *)GUI_CB_TRV_COOPERATIVE_CHILDLOCK_FLAG);
-	ESPUI.setElementStyle(
-	  trv_cooperative_childlock_switcher, "margin: 0% 15%;");
+	  Control::Type::Switcher, "TRV cooperative childlock", (long int)0, 
+		Control::Color::Dark, zb_channel_flags_label,editChannelFlagsCallback, 
+		(void *)GUI_CB_TRV_COOPERATIVE_CHILDLOCK_FLAG);
+	
+	//ESPUI.setElementStyle(
+	//  trv_cooperative_childlock_switcher, "margin: 0% 15%;");
 
-	addEmptyLineLabel(zb_channel_flags_label);
+	//addEmptyLineLabel(zb_channel_flags_label);
 
-	addFlagsLabel(
+	/*addFlagsLabel(
 	  "&#10023; <i>TRV AUTO mode =><br>Supla schedule/manual</i> &#10023;",
 	  zb_channel_flags_label);
 
@@ -2731,17 +3052,17 @@ void buildChannelsTabGUI() {
 	  "&#10023; <i>TRV cooperative childlock &#10023;",
 	  zb_channel_flags_label);
 
-	addEmptyLineLabel(zb_channel_flags_label);
+	addEmptyLineLabel(zb_channel_flags_label);*/
 
 	enable_resend_temperature_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_flags_label,
+	  Control::Type::Switcher, "Enable temperature forwarding", 
+		(long int)0, Control::Color::Dark, zb_channel_flags_label,
 	  editChannelFlagsCallback, (void *)GUI_CB_ENABLE_RESEND_TEMPERATURE_FLAG);
 
-	ESPUI.setElementStyle(
-	  enable_resend_temperature_switcher, "margin: 0% 15%;");
+	//ESPUI.setElementStyle(
+	//  enable_resend_temperature_switcher, "margin: 0% 15%;");
 
-	skip_subdevice_registation_switcher = ESPUI.addControl(
+	/*skip_subdevice_registation_switcher = ESPUI.addControl(
 	  Control::Type::Switcher, empty_str, (long int)0,
 	  Control::Color::Dark, zb_channel_flags_label,
 	  editChannelFlagsCallback, (void *)GUI_CB_SKIP_SUBDEVICE_REGISTRATION_FLAG);
@@ -2756,8 +3077,59 @@ void buildChannelsTabGUI() {
 	  zb_channel_flags_label);
 	addFlagsLabel(
 	  "&#10023; <i>Skip subdevice registration at startup</i> &#10023;",
-	  zb_channel_flags_label);
+	  zb_channel_flags_label);*/
 
+	ESPUI.setPanelWide(zb_channel_flags_label, true);
+
+	zb_channel_timings_label = ESPUI.addControl(
+	  Control::Type::Label, "Channel timings panel", "Input new value and press"
+	  " Save", Control::Color::Dark, channelstab);
+	
+	ESPUI.setElementStyle(zb_channel_timings_label, clearLabelStyle);
+
+	keepalive_number = ESPUI.addControl(
+	  Control::Type::Number, keepalive_desc, (long int)0, Control::Color::Dark,
+	  zb_channel_timings_label, generalCallback);
+
+	keepalive_save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+	  zb_channel_timings_label, editChannelCallback,
+	  (void *)GUI_CB_UPDATE_KEEPALIVE_FLAG);
+
+	ESPUI.setElementStyle(keepalive_number, "width: calc(23% - 7px); min-width: "
+    "120px; margin: 0 2px 10px 5px;");  
+  ESPUI.setElementStyle(keepalive_save_button, "width: calc(10% - 17px); min-width: "
+    "60px; margin: 0 15px 10px 2px;");
+
+	timeout_number = ESPUI.addControl(
+	  Control::Type::Number, timeout_desc, (long int)0,
+	  Control::Color::Dark, zb_channel_timings_label, generalCallback);
+
+	timeout_save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+	  zb_channel_timings_label, editChannelCallback,
+	  (void *)GUI_CB_UPDATE_TIMEOUT_FLAG);
+
+	ESPUI.setElementStyle(timeout_number, "width: calc(23% - 7px); min-width: "
+    "120px; margin: 0 2px 10px 5px;");  
+  ESPUI.setElementStyle(timeout_save_button, "width: calc(10% - 17px); min-width: "
+    "60px; margin: 0 15px 10px 2px;");
+
+	refresh_number = ESPUI.addControl(
+	  Control::Type::Number, refresh_desc, (long int)0, Control::Color::Dark,
+	  zb_channel_timings_label, generalCallback);
+
+	refresh_save_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+	  zb_channel_timings_label, editChannelCallback,
+	  (void *)GUI_CB_UPDATE_REFRESH_FLAG);
+
+	ESPUI.setElementStyle(refresh_number, "width: calc(23% - 7px); min-width: "
+    "120px; margin: 0 2px 10px 5px;");  
+  ESPUI.setElementStyle(refresh_save_button, "width: calc(10% - 17px); min-width: "
+    "60px; margin: 0 15px 10px 2px;");
+
+	ESPUI.setPanelWide(zb_channel_timings_label, true);
 
 	zb_channel_params_label = ESPUI.addControl(
 	  Control::Type::Label, "Channel custom parameters",
@@ -2766,106 +3138,69 @@ void buildChannelsTabGUI() {
 	  Control::Color::Dark, channelstab);
 	ESPUI.setElementStyle(zb_channel_params_label, clearLabelStyle);
 
-	working_str = "0";
-	param_1_number = ESPUI.addControl(
-	  Control::Type::Text, empty_str, working_str, Control::Color::Dark,
-	  zb_channel_params_label, generalCallback);
+  working_str = "0";
+  param_1_text = ESPUI.addControl(
+    Control::Type::Text, "&#10023; PARAM(1) - currently not used &#10023;", 
+    working_str, Control::Color::Dark, zb_channel_params_label, 
+    generalCallback);
 
-	param_1_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_params_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_PARAM_1_FLAG);
+  BasicControl* param_1_textarea = ESPUI.getControl(param_1_text);
+  param_1_textarea->control_flags |= CONTROL_FLAG_TEXTAREA;
+  param_1_textarea->rows = 3; 
+  param_1_textarea->cols = 56;
 
+  param_1_save_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+    zb_channel_params_label, editChannelCallback,
+    (void *)GUI_CB_UPDATE_PARAM_1_FLAG);
 
-	param_1_desc_label = ESPUI.addControl(
-	  Control::Type::Label, empty_str, "&#10023; PARAM(1) - currently not used "
-	                                   "&#10023;",
-	  Control::Color::None, zb_channel_params_label);
-	ESPUI.setElementStyle(param_1_desc_label, clearLabelStyle);
+  ESPUI.setElementStyle(
+		param_1_text, 
+		"resize: none; width: calc(80% - 7px); min-width: 200px; "
+		"margin: 0 2px 10px 5px;");
+  ESPUI.setElementStyle(
+		param_1_save_button, "width: calc(20% - 17px); min-width: 60px; "
+		"margin: 0 15px 10px 2px;");
 
-	param_2_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_params_label, generalCallback);
+  param_2_number = ESPUI.addControl(
+    Control::Type::Number, "&#10023; PARAM(2) - currently not used &#10023;", 
+    (long int)0, Control::Color::Dark, zb_channel_params_label, 
+		generalCallback);
 
-	param_2_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_params_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_PARAM_2_FLAG);
+  param_2_save_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+    zb_channel_params_label, editChannelCallback,
+    (void *)GUI_CB_UPDATE_PARAM_2_FLAG);
 
-	param_2_desc_label = ESPUI.addControl(
-	  Control::Type::Label, empty_str, "&#10023; PARAM(2) - currently not used "
-	                                   "&#10023;",
-	  Control::Color::None, zb_channel_params_label);
-	ESPUI.setElementStyle(param_2_desc_label, clearLabelStyle);
+  ESPUI.setElementStyle(
+		param_2_number, "width: calc(35% - 7px); min-width: 120px; "
+		"margin: 0 2px 10px 5px;");
+  ESPUI.setElementStyle(
+		param_2_save_button, "width: calc(15% - 17px); min-width: 60px; "
+		"margin: 0 15px 10px 2px;");
 
-	param_3_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_params_label, generalCallback);
+  param_3_number = ESPUI.addControl(
+    Control::Type::Number, "&#10023; PARAM(3) - currently not used &#10023;", 
+    (long int)0, Control::Color::Dark, zb_channel_params_label, 
+		generalCallback);
 
+  param_3_save_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Save", Control::Color::Dark,
+    zb_channel_params_label, editChannelCallback,
+    (void *)GUI_CB_UPDATE_PARAM_3_FLAG);
 
-	param_3_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_params_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_PARAM_3_FLAG);
+  ESPUI.setElementStyle(
+		param_3_number, "width: calc(35% - 7px); min-width: 120px; "
+		"margin: 0 2px 10px 5px;");
+  ESPUI.setElementStyle(
+		param_3_save_button, "width: calc(15% - 17px); min-width: 60px; "
+		"margin: 0 15px 10px 2px;");
 
-	param_3_desc_label = ESPUI.addControl(
-	  Control::Type::Label, empty_str, "&#10023; PARAM(3) - currently not used "
-	                                   "&#10023;",
-	  Control::Color::None, zb_channel_params_label);
-	ESPUI.setElementStyle(param_3_desc_label, clearLabelStyle);
-
-	zb_channel_timings_label = ESPUI.addControl(
-	  Control::Type::Label, "Channel timings panel", "Input new value and press"
-	                                                 " Save",
-	  Control::Color::Dark, channelstab);
-
-	keepalive_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0, Control::Color::Dark,
-	  zb_channel_timings_label, generalCallback);
-
-	keepalive_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_timings_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_KEEPALIVE_FLAG);
-
-	addClearLabel(keepalive_desc, zb_channel_timings_label);
-
-	timeout_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0,
-	  Control::Color::Dark, zb_channel_timings_label, generalCallback);
-
-	timeout_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_timings_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_TIMEOUT_FLAG);
-
-	addClearLabel(timeout_desc, zb_channel_timings_label);
-
-	refresh_number = ESPUI.addControl(
-	  Control::Type::Number, empty_str, (long int)0, Control::Color::Dark,
-	  zb_channel_timings_label, generalCallback);
-
-	refresh_save_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "Save", Control::Color::Dark,
-	  zb_channel_timings_label, editChannelCallback,
-	  (void *)GUI_CB_UPDATE_REFRESH_FLAG);
-
-	addClearLabel(refresh_desc, zb_channel_timings_label);
-
-	ESPUI.setPanelWide(zb_channel_timings_label, false);
+	ESPUI.setPanelWide(zb_channel_params_label, true);
 
 	ESPUI.addControl(
 	  Control::Type::Separator, empty_str, empty_str, Control::Color::None,
 	  channelstab);
-
-	remove_channel_button = ESPUI.addControl(
-	  Control::Type::Button, "Remove local channels", "Remove local channel",
-	  Control::Color::Alizarin, channelstab, removeChannelCallback);
-
-	working_str = three_dots_str;
-	channel_status_label = ESPUI.addControl(
-	  Control::Type::Label, "Status", working_str, Control::Color::Alizarin,
-	  remove_channel_button);
 
 	lah_panel = ESPUI.addControl(
 	  Control::Type::Button, "Local logic & channels", "Add AND gate",
@@ -2912,7 +3247,7 @@ void buildChannelsTabGUI() {
 	  lah_panel, addLocalActionHandlerCallback,
 	  (void *)GUI_CB_ADD_NOP_HANDLER_FLAG);
 
-	addEmptyLineLabel(lah_panel);
+	//addEmptyLineLabel(lah_panel);
 
 	ESPUI.addControl(
 	  Control::Type::Button, empty_str, "Add virtual relay",
@@ -2954,7 +3289,7 @@ void buildChannelsTabGUI() {
 	  Control::Color::Dark, lah_panel, addLocalChannelCallback,
 	  (void *)gui_cmd_add_virtual_gpm);
 
-	addEmptyLineLabel(lah_panel);
+	//addEmptyLineLabel(lah_panel);
 
 	ESPUI.addControl(
 	  Control::Type::Button, empty_str, "Add local relay (GPIO)",
@@ -2981,16 +3316,27 @@ void buildChannelsTabGUI() {
 	  (void *)gui_cmd_add_local_hcsr04);
 
 
-	addEmptyLineLabel(lah_panel);
+	//addEmptyLineLabel(lah_panel);
 	lah_status_label = ESPUI.addControl(
 	  Control::Type::Label, empty_str, three_dots_str,
 	  Control::Color::Dark, lah_panel);
+
+	ESPUI.setPanelWide(lah_panel, true);
+
+	remove_channel_button = ESPUI.addControl(
+	  Control::Type::Button, "Remove local channels", "Remove local channel",
+	  Control::Color::Alizarin, channelstab, removeChannelCallback);
+
+	working_str = three_dots_str;
+	channel_status_label = ESPUI.addControl(
+	  Control::Type::Label, "Status", working_str, Control::Color::Alizarin,
+	  remove_channel_button);
 
 	enableChannelControls(false);
 }
 
 /*****************************************************************************/
-
+/*
 void buildClustersAttributesTab() {
 
 	clusters_attributes_table[clusters_attributes_tab] = ESPUI.addControl(
@@ -3211,8 +3557,491 @@ void buildClustersAttributesTab() {
 	  clusters_attributes_table[clusters_attributes_tab]);
 
 	enableClustersAttributesControls(false);
-}
+}*/
+/*
+void buildClustersAttributesTab() {
 
+  clusters_attributes_table[clusters_attributes_tab] = ESPUI.addControl(
+    Control::Type::Tab, empty_str, "Clusters & Attributes",
+    Control::Color::Dark, Control::noParent);
+
+  // 1. Create a single master panel to hold everything
+  uint16_t main_panel = ESPUI.addControl(
+    Control::Type::Label, "ZigBee Operations Panel", empty_str,
+    Control::Color::Dark, clusters_attributes_table[clusters_attributes_tab]);
+  
+  ESPUI.setPanelWide(main_panel, true);
+  ESPUI.setElementStyle(main_panel, clearLabelStyle);
+
+  // --- ROW 1: Device Selection (40%) & Info (60%) ---
+  clusters_attributes_table[clusters_attributes_device_selector] =
+    ESPUI.addControl(Control::Type::Select, "ZigBee Devices", (long int)-1,
+    Control::Color::Dark, main_panel, clustersattributesdeviceSelectorCallback);
+
+  working_str = three_dots_str;
+  clusters_attributes_table[clusters_attributes_device_info_label] =
+    ESPUI.addControl(Control::Type::Label, "Device information", working_str,
+    Control::Color::Dark, main_panel);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[clusters_attributes_device_selector],
+    "width: calc(40% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[clusters_attributes_device_info_label],
+    "width: calc(60% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 2: Endpoint (15%), Cluster (35%), Attr Sel (25%), Attr Txt (25%)
+  clusters_attributes_table[device_endpoint_number] = ESPUI.addControl(
+    Control::Type::Number, "Endpoint number", (long int)1,
+    Control::Color::Dark, main_panel, endpointCallback);
+
+  clusters_attributes_table[device_cluster_selector] = ESPUI.addControl(
+    Control::Type::Select, "ZigBee cluster", (long int)-1,
+    Control::Color::Dark, main_panel, clusterCallback);
+
+  clusters_attributes_table[device_attribute_id_selector] = ESPUI.addControl(
+    Control::Type::Select, empty_str, (long int)-1,
+    Control::Color::Dark, main_panel, attributeCallback);
+
+  working_str = "0";
+  clusters_attributes_table[device_attribute_id_text] = ESPUI.addControl(
+    Control::Type::Text, 
+    "Select or enter cluster attribute id/custom command id"
+    "<br>use 0x for hexadecimal values)", 
+    working_str, Control::Color::Dark, main_panel, generalCallback);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_endpoint_number],
+    "width: calc(15% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_cluster_selector],
+    "width: calc(35% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_id_selector],
+    "width: calc(25% - 10px); min-width: 140px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_id_text],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 3: Type (25%), Size (15%), Val Sel (30%), Val Txt (30%) ---
+  clusters_attributes_table[device_attribute_type_selector] = ESPUI.addControl(
+    Control::Type::Select, empty_str, (long int)-1,
+    Control::Color::Dark, main_panel, datatypeCallback);
+
+  clusters_attributes_table[device_attribute_size_number] = ESPUI.addControl(
+    Control::Type::Number, 
+    "Select or enter attribute/custom command payload size"
+    "<br>(use 0x for hexadecimal values)", 
+    (long int)0, Control::Color::Dark, main_panel, generalMinMaxCallback,
+    (void *)MAX_ZIGBEE_PAYLOAD_SIZE);
+
+  clusters_attributes_table[device_attribute_value_selector] = ESPUI.addControl(
+    Control::Type::Select, empty_str, (long int)-1,
+    Control::Color::Dark, main_panel, valueCallback);
+
+  working_str = "0";
+  clusters_attributes_table[device_attribute_value_text] = ESPUI.addControl(
+    Control::Type::Text, 
+    "Select or enter attribute value<br>or custom command payload<br>"
+    "use 0x for hexadecimal values or hexstring without 0x", 
+    working_str, Control::Color::Dark, main_panel, generalCallback);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_type_selector],
+    "width: calc(25% - 10px); min-width: 140px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_size_number],
+    "width: calc(15% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_value_selector],
+    "width: calc(30% - 10px); min-width: 150px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_value_text],
+    "width: calc(30% - 10px); min-width: 180px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 4: Reporting (3 items, 33.3% each) ---
+  clusters_attributes_table[device_config_min_number] = ESPUI.addControl(
+    Control::Type::Number, "Min interval", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  clusters_attributes_table[device_config_max_number] = ESPUI.addControl(
+    Control::Type::Number, "Max interval", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  clusters_attributes_table[device_config_delta_number] = ESPUI.addControl(
+    Control::Type::Number, "Delta", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_min_number],
+    "width: calc(33.3% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_max_number],
+    "width: calc(33.3% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_delta_number],
+    "width: calc(33.3% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 5: Settings (Manuf Switch 20%, Manuf Select 60%, Async 20%) ---
+  clusters_attributes_table[manufacturer_code_switcher] = ESPUI.addControl(
+    Control::Type::Switcher, "&#10023; <i>Use manufacturer code</i> &#10023;",
+    (long int)0, Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[manufacturer_code_selector] = ESPUI.addControl(
+    Control::Type::Select, "Manufacturer code", (long int)-1,
+    Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[device_async_switcher] = ESPUI.addControl(
+    Control::Type::Switcher, "Asynchronous command", (long int)0,
+    Control::Color::Dark, main_panel, generalCallback);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[manufacturer_code_switcher],
+    "width: calc(20% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[manufacturer_code_selector],
+    "width: calc(60% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_async_switcher],
+    "width: calc(20% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 6: Buttons (5 buttons, 20% each) ---
+  clusters_attributes_table[device_read_attribute_button] = ESPUI.addControl(
+    Control::Type::Button, "Attribute commands", "Read attribute", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_READ_ATTR_FLAG);
+
+  clusters_attributes_table[device_read_config_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Read reporting settings", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_READ_CONFIG_FLAG);
+
+  clusters_attributes_table[device_write_attribute_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Write attribute", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_WRITE_ATTR_FLAG);
+
+  clusters_attributes_table[device_write_config_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Configure reporting", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_CONFIG_REPORT_FLAG);
+
+  clusters_attributes_table[device_custom_command_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Send custom command", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_CUSTOM_CMD_FLAG);
+
+  // Increased min-widths so the long button text doesn't overflow
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_attribute_button],
+    "width: calc(20% - 10px); min-width: 130px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_config_button],
+    "width: calc(20% - 10px); min-width: 180px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_write_attribute_button],
+    "width: calc(20% - 10px); min-width: 130px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_write_config_button],
+    "width: calc(20% - 10px); min-width: 150px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_custom_command_button],
+    "width: calc(20% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+
+  // --- ROW 7: Result Labels (50% each) ---
+  working_str = three_dots_str;
+  clusters_attributes_table[device_read_attribute_label] = ESPUI.addControl(
+    Control::Type::Label, "ZigBee command result", working_str,
+    Control::Color::Dark, main_panel);
+
+  clusters_attributes_table[device_Tuya_payload_label] = ESPUI.addControl(
+    Control::Type::Label, "Tuya custom cluster payload", working_str,
+    Control::Color::Dark, main_panel);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_attribute_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_Tuya_payload_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+
+  // --- ADD OPTIONS ---
+  ESPUI.addControl(Control::Type::Option, "Select attribute type...",
+    (long int)-1, Control::Color::None,
+    clusters_attributes_table[device_attribute_type_selector]);
+
+  ESPUI.addControl(Control::Type::Option, "Select attribute value...",
+    (long int)-1, Control::Color::None,
+    clusters_attributes_table[device_attribute_value_selector]);
+
+  uint32_t zigbee_datatypes_count =
+    sizeof(zigbee_datatypes) / sizeof(zigbee_datatype_t);
+  
+  for (uint8_t i = 0; i < zigbee_datatypes_count; i++) {
+    ESPUI.addControl(Control::Type::Option,
+      zigbee_datatypes[i].zigbee_datatype_name, i, Control::Color::None,
+      clusters_attributes_table[device_attribute_type_selector]);
+  }
+
+  ESPUI.addControl(Control::Type::Option, "Select manufacturer code...",
+    (long int)-1, Control::Color::None,
+    clusters_attributes_table[manufacturer_code_selector]);
+
+  uint32_t zigbee_manufacturer_codes_count =
+    sizeof(zigbee_manufacturer_codes) / sizeof(zigbee_manufacturer_code_t);
+  
+  for (uint8_t i = 0; i < zigbee_manufacturer_codes_count; i++) {
+    ESPUI.addControl(Control::Type::Option,
+      zigbee_manufacturer_codes[i].manufacturer_name,
+      zigbee_manufacturer_codes[i].manufacturer_code, Control::Color::None,
+      clusters_attributes_table[manufacturer_code_selector]);
+  }
+
+  enableClustersAttributesControls(false);
+}
+*/
+
+void buildClustersAttributesTab() {
+
+  clusters_attributes_table[clusters_attributes_tab] = ESPUI.addControl(
+    Control::Type::Tab, empty_str, "Clusters & Attributes",
+    Control::Color::Dark, Control::noParent);
+
+	clusters_attributes_table[clusters_attributes_device_selector] =
+	  ESPUI.addControl(
+	    Control::Type::Select, "ZigBee devices", (long int)-1,
+	    Control::Color::Dark,
+	    clusters_attributes_table[clusters_attributes_tab],
+	    clustersattributesdeviceSelectorCallback);
+
+	working_str = three_dots_str;
+	clusters_attributes_table[clusters_attributes_device_info_label] =
+	  ESPUI.addControl(
+	    Control::Type::Label, "Device information", working_str,
+	    Control::Color::Dark,
+	    clusters_attributes_table[clusters_attributes_tab]);
+
+	ESPUI.setPanelWide(
+	  clusters_attributes_table[clusters_attributes_device_selector], false);
+
+  uint16_t main_panel = ESPUI.addControl(
+    Control::Type::Label, "ZigBee clusters command panel", empty_str,
+    Control::Color::Dark, clusters_attributes_table[clusters_attributes_tab]);
+  
+  ESPUI.setPanelWide(main_panel, true);
+  ESPUI.setElementStyle(main_panel, clearLabelStyle);
+
+  clusters_attributes_table[device_endpoint_number] = ESPUI.addControl(
+    Control::Type::Number, "endpoint", (long int)1, 
+    Control::Color::Dark, main_panel, endpointCallback);
+
+  clusters_attributes_table[device_cluster_selector] = ESPUI.addControl(
+    Control::Type::Select, "cluster", (long int)-1,
+    Control::Color::Dark, main_panel, clusterCallback);
+
+  clusters_attributes_table[device_attribute_id_selector] = ESPUI.addControl(
+    Control::Type::Select, "attribute/command", (long int)-1,
+    Control::Color::Dark, main_panel, attributeCallback);
+
+  working_str = "0";
+  clusters_attributes_table[device_attribute_id_text] = ESPUI.addControl(
+    Control::Type::Text, "attribute/command id", working_str, 
+    Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[device_attribute_type_selector] = ESPUI.addControl(
+    Control::Type::Select, "attribute type", (long int)-1,
+    Control::Color::Dark, main_panel, datatypeCallback);
+
+  clusters_attributes_table[device_attribute_size_number] = ESPUI.addControl(
+    Control::Type::Number, "payload size", (long int)0, 
+    Control::Color::Dark, main_panel, generalMinMaxCallback,
+    (void *)MAX_ZIGBEE_PAYLOAD_SIZE);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_endpoint_number],
+    "width: calc(8% - 10px); min-width: 70px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_cluster_selector],
+    "width: calc(22% - 10px); min-width: 140px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_id_selector],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_id_text],
+    "width: calc(18% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_type_selector],
+    "width: calc(17% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_size_number],
+    "width: calc(10% - 10px); min-width: 80px; margin: 0 5px 10px 5px;");
+
+  clusters_attributes_table[device_attribute_value_selector] = ESPUI.addControl(
+    Control::Type::Select, "attribute values", (long int)-1,
+    Control::Color::Dark, main_panel, valueCallback);
+
+  working_str = "0";
+  clusters_attributes_table[device_attribute_value_text] = ESPUI.addControl(
+    Control::Type::Text, "attribute/payload value", working_str, 
+    Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[device_config_min_number] = ESPUI.addControl(
+    Control::Type::Number, "minimal interval", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  clusters_attributes_table[device_config_max_number] = ESPUI.addControl(
+    Control::Type::Number, "maximal interval", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  clusters_attributes_table[device_config_delta_number] = ESPUI.addControl(
+    Control::Type::Number, "delta", (long int)0,
+    Control::Color::Dark, main_panel, generalMinMaxCallback, (void *)65535);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_value_selector],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_attribute_value_text],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_min_number],
+    "width: calc(18% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_max_number],
+    "width: calc(18% - 10px); min-width: 100px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_config_delta_number],
+    "width: calc(14% - 10px); min-width: 80px; margin: 0 5px 10px 5px;");
+
+  clusters_attributes_table[manufacturer_code_switcher] = ESPUI.addControl(
+    Control::Type::Switcher, "use manufacturer code",
+    (long int)0, Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[manufacturer_code_selector] = ESPUI.addControl(
+    Control::Type::Select, "manufacturer code", (long int)-1,
+    Control::Color::Dark, main_panel, generalCallback);
+
+  clusters_attributes_table[device_async_switcher] = ESPUI.addControl(
+    Control::Type::Switcher, "asynchronous command", (long int)0,
+    Control::Color::Dark, main_panel, generalCallback);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[manufacturer_code_switcher],
+    "width: calc(20% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[manufacturer_code_selector],
+    "width: calc(60% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_async_switcher],
+    "width: calc(20% - 10px); min-width: 120px; margin: 0 5px 10px 5px;");
+
+
+  clusters_attributes_table[device_read_attribute_button] = ESPUI.addControl(
+    Control::Type::Button, "attribute commands", "Read attribute", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_READ_ATTR_FLAG);
+
+  clusters_attributes_table[device_read_config_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Read config", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_READ_CONFIG_FLAG);
+
+  clusters_attributes_table[device_write_attribute_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Write attribute", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_WRITE_ATTR_FLAG);
+
+  clusters_attributes_table[device_write_config_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Configure reporting", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_CONFIG_REPORT_FLAG);
+
+  clusters_attributes_table[device_custom_command_button] = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Custom cmd", 
+    Control::Color::Dark, main_panel, getClustersAttributesQueryCallback,
+    (void *)GUI_CB_CUSTOM_CMD_FLAG);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_attribute_button],
+    "width: calc(20% - 10px); min-width: 110px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_config_button],
+    "width: calc(20% - 10px); min-width: 110px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_write_attribute_button],
+    "width: calc(20% - 10px); min-width: 110px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_write_config_button],
+    "width: calc(20% - 10px); min-width: 110px; margin: 0 5px 10px 5px;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_custom_command_button],
+    "width: calc(20% - 10px); min-width: 110px; margin: 0 5px 10px 5px;");
+
+  working_str = three_dots_str;
+  
+  clusters_attributes_table[device_read_attribute_label] = ESPUI.addControl(
+    Control::Type::Label, "ZigBee command result", working_str,
+    Control::Color::Dark, main_panel);
+
+  clusters_attributes_table[device_Tuya_payload_label] = ESPUI.addControl(
+    Control::Type::Label, "Tuya custom cluster payload", working_str,
+    Control::Color::Dark, main_panel);
+
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_read_attribute_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px; "
+    "pointer-events: none; opacity: 0.7;");
+  ESPUI.setElementStyle(
+    clusters_attributes_table[device_Tuya_payload_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px; "
+    "pointer-events: none; opacity: 0.7;");
+  
+  const char* legend_html = 
+    "<div style='text-align: left; font-size: 13px; line-height: 1.5;'>"
+    "<b>Legend:</b><br>"
+    "&#8226; <b>attribute/command ID</b> & <b>payload size</b>: "
+    "Use <i>0x</i> prefix for hexadecimal values.<br>"
+    "&#8226; <b>attribute/payload value</b>: "
+    "Use <i>0x</i> for hex values or a hexstring without <i>0x</i>."
+    "</div>";
+
+  uint16_t legend_label = ESPUI.addControl(
+    Control::Type::Label, empty_str, legend_html, 
+    Control::Color::None, main_panel);
+
+  ESPUI.setElementStyle(legend_label, 
+    "width: calc(100% - 10px); margin: 5px 5px 10px 5px; "
+    "background-color: transparent; border: none; box-shadow: none;");
+
+  ESPUI.addControl(Control::Type::Option, "Select attribute type...",
+    (long int)-1, Control::Color::None,
+    clusters_attributes_table[device_attribute_type_selector]);
+
+  uint32_t zigbee_datatypes_count =
+    sizeof(zigbee_datatypes) / sizeof(zigbee_datatype_t);
+  
+  for (uint8_t i = 0; i < zigbee_datatypes_count; i++) {
+    ESPUI.addControl(Control::Type::Option,
+      zigbee_datatypes[i].zigbee_datatype_name, i, Control::Color::None,
+      clusters_attributes_table[device_attribute_type_selector]);
+  }
+
+  ESPUI.addControl(Control::Type::Option, "Select manufacturer code...",
+    (long int)-1, Control::Color::None,
+    clusters_attributes_table[manufacturer_code_selector]);
+
+  uint32_t zigbee_manufacturer_codes_count =
+    sizeof(zigbee_manufacturer_codes) / sizeof(zigbee_manufacturer_code_t);
+  
+  for (uint8_t i = 0; i < zigbee_manufacturer_codes_count; i++) {
+    ESPUI.addControl(Control::Type::Option,
+      zigbee_manufacturer_codes[i].manufacturer_name,
+      zigbee_manufacturer_codes[i].manufacturer_code, Control::Color::None,
+      clusters_attributes_table[manufacturer_code_selector]);
+  }
+
+  enableClustersAttributesControls(false);
+}
 /*****************************************************************************/
 
 void buildSonoffValveGUI(uint16_t advanced_devices_tab) {
@@ -3714,105 +4543,125 @@ void buildTuyaCustomClusterTabGUI() {
 	  Control::Type::Label, "TCC ZigBee device", working_str,
 	  Control::Color::Dark, Tuya_custom_cluster_tab);
 
-	Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector] =
-	  ESPUI.addControl(
-	    Control::Type::Select, "TCC ZigBee device datapoints", (long int)-1,
-	    Control::Color::Dark, Tuya_custom_cluster_tab,
-	    TuyaDatapointIdSelectorCallback);
+	auto main_panel = ESPUI.addControl(
+    Control::Type::Label, "Tuya custom cluster panel", empty_str,
+		Control::Color::Dark, Tuya_custom_cluster_tab);
+  
+  ESPUI.setPanelWide(main_panel, true);
+  ESPUI.setElementStyle(main_panel, clearLabelStyle);
 
-
-	Tuya_devices_tab_controls_table[Tuya_datapoint_id_number] =
-	  ESPUI.addControl(
-	    Control::Type::Number, empty_str, (long int)0, Control::Color::Dark,
-	    Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector],
-	    generalMinMaxCallback, (void *)255);
-
-	addClearLabel(
-	  "Tuya datapoint id (1 - 255)",
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector]);
-
-	Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector] =
-	  ESPUI.addControl(
-	    Control::Type::Select, "Tuya datapoint type", (long int)-1,
-	    Control::Color::Dark,
-	    Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector],
-	    TuyaDatapointTypeSelectorCallback);
-
+  Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector] =
 	ESPUI.addControl(
-	  Control::Type::Option, "Select Tuya datapoint type...", (long int)-1,
-	  Control::Color::None,
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector]);
+      Control::Type::Select, "TCC ZigBee device datapoints", (long int)-1,
+      Control::Color::Dark, main_panel, TuyaDatapointIdSelectorCallback);
 
-	for (uint8_t t = 0; t < 6; t++) {
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
 
-		working_str = Tuya_datapoint_types[t].Tuya_datapoint_type_id;
-		ESPUI.addControl(
-		  Control::Type::Option, Tuya_datapoint_types[t].Tuya_datapoint_type_name,
-		  Tuya_datapoint_types[t].Tuya_datapoint_type_id, Control::Color::None,
-		  Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector]);
-	}
+  Tuya_devices_tab_controls_table[Tuya_datapoint_id_number] =
+    ESPUI.addControl(
+      Control::Type::Number, "DP ID (1-255)", (long int)0, Control::Color::Dark,
+      main_panel, generalMinMaxCallback, (void *)255);
 
-	Tuya_devices_tab_controls_table[Tuya_datapoint_length_number] =
-	  ESPUI.addControl(
-	    Control::Type::Number, empty_str, (long int)0, Control::Color::Dark,
-	    Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector],
-	    generalMinMaxCallback, (void *)58);
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_datapoint_id_number],
+    "width: calc(12% - 10px); min-width: 90px; margin: 0 5px 10px 5px;");
 
-	addClearLabel(
-	  "Tuya datapoint type length (1-58)",
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector]),
+  Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector] =
+    ESPUI.addControl(
+      Control::Type::Select, "Tuya datapoint type", (long int)-1,
+      Control::Color::Dark, main_panel, TuyaDatapointTypeSelectorCallback);
 
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
 
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_value_number] =
-	    ESPUI.addControl(
-	      Control::Type::Number, empty_str, (long int)0, Control::Color::Dark,
-	      Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector],
-	      generalCallback);
+  Tuya_devices_tab_controls_table[Tuya_datapoint_length_number] =
+    ESPUI.addControl(
+      Control::Type::Number, "Length (1-58)", (long int)0, Control::Color::Dark,
+      main_panel, generalMinMaxCallback, (void *)58);
 
-	addClearLabel(
-	  "Datapoint value (numbers only, no range checking)",
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector]);
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_datapoint_length_number],
+    "width: calc(13% - 10px); min-width: 90px; margin: 0 5px 10px 5px;");
+
+  Tuya_devices_tab_controls_table[Tuya_datapoint_value_number] =
+    ESPUI.addControl(
+      Control::Type::Number, "Value (no range check)", (long int)0, 
+      Control::Color::Dark, main_panel, generalCallback);
+
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_datapoint_value_number],
+    "width: calc(25% - 10px); min-width: 160px; margin: 0 5px 10px 5px;");
+
+  ESPUI.addControl(
+    Control::Type::Option, "Select Tuya datapoint type...", (long int)-1,
+    Control::Color::None,
+    Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector]);
+
+  for (uint8_t t = 0; t < 6; t++) {
+    working_str = Tuya_datapoint_types[t].Tuya_datapoint_type_id;
+    ESPUI.addControl(
+      Control::Type::Option, Tuya_datapoint_types[t].Tuya_datapoint_type_name,
+      Tuya_datapoint_types[t].Tuya_datapoint_type_id, Control::Color::None,
+      Tuya_devices_tab_controls_table[Tuya_datapoint_type_selector]);
+  }
 
 	working_str = three_dots_str;
 	Tuya_devices_tab_controls_table[Tuya_datapoint_description_label] =
 	  ESPUI.addControl(
-	    Control::Type::Label, "Datapoint description", working_str,
-	    Control::Color::Dark,
-	    Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector]);
+	    Control::Type::Label, "Datapoint description", working_str, 
+			Control::Color::Dark, main_panel);
 
-	addClearLabel(
+	/*addClearLabel(
 	  "Datapoint acceptable values description.<br>"
-	  "Use it to fill datapoint value field.",
-	  Tuya_devices_tab_controls_table[Tuya_datapoint_id_selector]);
+	  "Use it to fill datapoint value field.", main_panel);*/
 
 	ESPUI.setElementStyle(
 	  Tuya_devices_tab_controls_table[Tuya_datapoint_description_label],
 	  "text-align: left; font-family:tahoma; font-size: "
 	  "4 px; font-style: normal; font-weight: normal;");
 
-	Tuya_devices_tab_controls_table[Tuya_device_data_request_button] =
-	  ESPUI.addControl(
-	    Control::Type::Button, empty_str, "Data request",
-	    Control::Color::Dark, Tuya_custom_cluster_tab,
-	    TuyaCustomCmdCallback, (void *)GUI_CB_SEND_TUYA_REQUEST_FLAG);
+  Tuya_devices_tab_controls_table[Tuya_device_data_request_button] =
+    ESPUI.addControl(
+      Control::Type::Button, empty_str, "Data request",
+      Control::Color::Dark, main_panel, TuyaCustomCmdCallback, 
+      (void *)GUI_CB_SEND_TUYA_REQUEST_FLAG);
 
-	Tuya_devices_tab_controls_table[Tuya_device_data_query_button] =
-	  ESPUI.addControl(
-	    Control::Type::Button, empty_str, "Data query",
-	    Control::Color::Dark,
-	    Tuya_devices_tab_controls_table[Tuya_device_data_request_button],
-	    TuyaCustomCmdCallback, (void *)GUI_CB_SEND_TUYA_QUERY_FLAG);
+  Tuya_devices_tab_controls_table[Tuya_device_data_query_button] =
+    ESPUI.addControl(
+      Control::Type::Button, empty_str, "Data query",
+      Control::Color::Dark, main_panel, TuyaCustomCmdCallback, 
+      (void *)GUI_CB_SEND_TUYA_QUERY_FLAG);
 
-	working_str = three_dots_str;
-	Tuya_devices_tab_controls_table[Tuya_device_cmd_result_label] =
-	  ESPUI.addControl(
-	    Control::Type::Label, "Command Result", working_str,
-	    Control::Color::Dark, Tuya_custom_cluster_tab);
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_device_data_request_button],
+    "width: calc(45% - 15px); min-width: 130px; margin: 0 15px 10px 5px;");
+    
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_device_data_query_button],
+    "width: calc(45% - 15px); min-width: 130px; margin: 0 5px 10px 15px;");
 
-	Tuya_devices_tab_controls_table[Tuya_device_payload_label] =
-	  ESPUI.addControl(
-	    Control::Type::Label, "Command Response payload", working_str,
-	    Control::Color::Dark, Tuya_custom_cluster_tab);
+  working_str = three_dots_str;
+  
+  Tuya_devices_tab_controls_table[Tuya_device_cmd_result_label] =
+    ESPUI.addControl(
+      Control::Type::Label, "Command Result", working_str,
+      Control::Color::Dark, main_panel);
+
+  Tuya_devices_tab_controls_table[Tuya_device_payload_label] =
+    ESPUI.addControl(
+      Control::Type::Label, "Command Response payload", working_str,
+      Control::Color::Dark, main_panel);
+
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_device_cmd_result_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+    
+  ESPUI.setElementStyle(
+    Tuya_devices_tab_controls_table[Tuya_device_payload_label],
+    "width: calc(50% - 10px); min-width: 200px; margin: 0 5px 10px 5px; ");
 }
 
 /*****************************************************************************/
@@ -3973,6 +4822,7 @@ void enableActionDetails(bool enable) {
 		ESPUI.updateText(action_condition_threshold_2_number, working_str);
 	}
 
+	enableControlStyle(action_details_label, enable);
 	enableControlStyle(action_enabled_switcher, enable);
 	enableControlStyle(action_name_text, enable);
 	enableControlStyle(action_description_text, enable);
@@ -4074,6 +4924,7 @@ void updateActionButtons() {
 	enableControlStyle(action_cancel_button, action_cancel_button_enable);
 	enableControlStyle(action_remove_button, action_remove_button_enable);
 	enableControlStyle(action_copy_button, action_remove_button_enable);
+	enableControlStyle(action_chain_button, action_remove_button_enable);
 }
 
 /*****************************************************************************/
@@ -4091,8 +4942,8 @@ void updateActionDetails(
 	if (current_action_gui_state != VIEW_ACTION)
 		enableActionControls(false);
 
-	ESPUI.updateSwitcher(action_enabled_switcher,
-	                     empty_action ? true : action.is_enabled);
+	ESPUI.updateSwitcher(
+		action_enabled_switcher, empty_action ? true : action.is_enabled);
 
 	working_str = empty_action ? empty_str : action.action_name;
 	ESPUI.updateText(action_name_text, working_str);
@@ -4101,7 +4952,8 @@ void updateActionDetails(
 	ESPUI.updateText(action_description_text, working_str);
 
 	ESPUI.updateSelect(
-	  action_source_channel_selector, empty_action ? -1 : Z2S_Core::getZ2SChannelIndexByChannelNumber(action.src_Supla_channel));
+	  action_source_channel_selector, empty_action ? -1 : 
+		Z2S_Core::getZ2SChannelIndexByChannelNumber(action.src_Supla_channel));
 
 	long action_id = empty_action ? -1 : action.is_condition ? (0xFFFF + action.src_Supla_event)
 	                                                         : action.src_Supla_event;
@@ -4479,6 +5331,102 @@ void enableActionsTable(bool enable) {
 
 /*****************************************************************************/
 
+void addIrCodesTableJsonRow(
+  char *buffer, size_t max_size, size_t &offset, int16_t slot_id,
+  z2s_ir_code_t &ir_code, bool is_first) {
+
+  char preview_buf[68] = {};
+  strncpy(preview_buf, ir_code.ir_code_base64, 60);
+  if (strlen(ir_code.ir_code_base64) > 60) {
+    strcat(preview_buf, "...");
+  }
+
+  appendToBuffer(
+    buffer, max_size, offset,
+    "%s[\"#%03d\",\"", is_first ? "" : ",", slot_id);
+  appendEscapedJsonString(buffer, max_size, offset, ir_code.ir_code_name);
+  appendToBuffer(buffer, max_size, offset, "\",\"");
+  appendEscapedJsonString(buffer, max_size, offset, preview_buf);
+  appendToBuffer(buffer, max_size, offset, "\"]");
+}
+
+/*****************************************************************************/
+
+void buildIrCodesTableJsonPayload(
+  uint16_t ui_label_id, int target_ir_code_index) {
+
+  const size_t MAX_JSON_SIZE = 2048;
+  char json_payload[MAX_JSON_SIZE] = {};
+  const int BATCH_SIZE = 10;
+  size_t offset = 0;
+
+  int total_codes = irCodesStorage.getCount();
+
+  if (total_codes == 0) {
+    current_ir_code_id = -1;
+    current_ir_code_counter = -1;
+    snprintf(
+      json_payload, MAX_JSON_SIZE,
+      "{\"type\":\"update_action_table\",\"is_ir\":true,\"target\":\"id%d\","
+      "\"s\":-1,\"append\":false,\"start_idx\":0,\"d\":[]}",
+      ui_label_id);
+    ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+    return;
+  }
+
+  int16_t next_slot = irCodesStorage.findNext(0);
+  z2s_ir_code_t ir_code = {};
+
+  for (int i = 0; i < total_codes; i++) {
+    if (i % BATCH_SIZE == 0) {
+      offset = 0;
+      bool is_appending = (i > 0);
+      appendToBuffer(
+        json_payload, MAX_JSON_SIZE, offset,
+        "{\"type\":\"update_action_table\",\"is_ir\":true,\"target\":\"id%d\","
+        "\"s\":%d,\"append\":%s,\"start_idx\":%d,\"d\":[",
+        ui_label_id, target_ir_code_index, is_appending ? "true" : "false", i);
+    }
+
+    bool is_first_in_batch = (i % BATCH_SIZE == 0);
+    irCodesStorage.load(next_slot, ir_code);
+
+    addIrCodesTableJsonRow(
+      json_payload, MAX_JSON_SIZE, offset, next_slot, ir_code, is_first_in_batch);
+
+    next_slot = irCodesStorage.findNext(next_slot + 1);
+
+    if (((i + 1) % BATCH_SIZE == 0) || (i == total_codes - 1)) {
+      appendToBuffer(json_payload, MAX_JSON_SIZE, offset, "]}");
+      ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+    }
+  }
+}
+
+/*****************************************************************************/
+
+void sendIrCodeRowEdit(uint16_t ui_label_id, int target_row_index) {
+
+  char json_payload[512] = {};
+  size_t offset = 0;
+
+  appendToBuffer(
+    json_payload, sizeof(json_payload), offset,
+    "{\"type\":\"edit_action_row\",\"target\":\"id%d\",\"idx\":%d,\"d\":",
+    ui_label_id, target_row_index);
+
+  z2s_ir_code_t ir_code = {};
+  irCodesStorage.load(current_ir_code_id, ir_code);
+
+  addIrCodesTableJsonRow(
+    json_payload, sizeof(json_payload), offset, current_ir_code_id, ir_code, 
+		true);
+
+  appendToBuffer(json_payload, sizeof(json_payload), offset, "}");
+  ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+}
+/*****************************************************************************/
+
 bool buildSelectJsonPreamble(
   char *json_payload, size_t json_payload_size, size_t &offset, bool clear,
   int32_t selected_value, uint8_t selectors_number,
@@ -4686,11 +5634,13 @@ bool buildChannelsSelectJsonPayload(
 /*****************************************************************************/
 
 enum ZbDeviceSelectType {
-
 	ZB_DEVICE_SELECT_TYPE_ALL,
 	ZB_DEVICE_SELECT_TYPE_AD,
-	ZB_DEVICE_SELECT_TYPE_TCC
+	ZB_DEVICE_SELECT_TYPE_TCC,
+	ZB_DEVICE_SELECT_TYPE_IR
 };
+
+/*****************************************************************************/
 
 bool buildZbDevicesSelectJsonPayload(
   ZbDeviceSelectType select_type, int32_t selected_value,
@@ -4709,11 +5659,13 @@ bool buildZbDevicesSelectJsonPayload(
 				for (Z2S_Device *device : Z2S_Devices) {
 
 					if (device->getRecordId() && 
-							((select_type == ZB_DEVICE_SELECT_TYPE_ALL) || 
-							(select_type == ZB_DEVICE_SELECT_TYPE_AD && 
-								device->isAdvancedDevice()) ||
-							(select_type == ZB_DEVICE_SELECT_TYPE_TCC && 
-								device->hasTuyaCustomCluster()))) {
+    					((select_type == ZB_DEVICE_SELECT_TYPE_ALL) || 
+     					 (select_type == ZB_DEVICE_SELECT_TYPE_AD && 
+							 	device->isAdvancedDevice()) ||
+     					 (select_type == ZB_DEVICE_SELECT_TYPE_TCC && 
+							 	device->hasTuyaCustomCluster()) ||
+     					 (select_type == ZB_DEVICE_SELECT_TYPE_IR && 
+							 	device->isIrRemote()))) {
 
 						if (!add_device_option(device->getDeviceIndex(), 
 									device->getDeviceLocalName())) return false;
@@ -4969,6 +5921,11 @@ void sortZbDevicesSelectorsMain(int32_t select_value = -1) {
 		  Tuya_devices_tab_controls_table[Tuya_device_selector]);
 	}
 
+	if (ir_device_selector < 0xFFFF) {
+		buildZbDevicesSelectJsonPayload(
+		  ZB_DEVICE_SELECT_TYPE_IR, select_value, 1, ir_device_selector);
+	}
+
 	int32_t multidevice_selected_slot;
 	uint16_t multidevice_selector =
 	  Z2S_getMultiDeviceSelector(&multidevice_selected_slot);
@@ -5092,23 +6049,6 @@ void buildActionsTabGUI() {
 
 	z2s_channel_action_t new_action = {};
 
-	/*table_first_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "FIRST", Control::Color::Dark,
-	  actions_tab, actionsTableCallback, (void *)GUI_CB_ACTION_FIRST_FLAG);
-
-	table_prev_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "PREV", Control::Color::Dark,
-	  table_first_button, actionsTableCallback, (void *)GUI_CB_ACTION_PREV_FLAG);
-
-	table_next_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "NEXT", Control::Color::Dark,
-	  table_first_button, actionsTableCallback, (void *)GUI_CB_ACTION_NEXT_FLAG);
-
-
-	table_last_button = ESPUI.addControl(
-	  Control::Type::Button, empty_str, "LAST", Control::Color::Dark,
-	  table_first_button, actionsTableCallback, (void *)GUI_CB_ACTION_LAST_FLAG);*/
-
 	working_str = "No actions";
 
 	int16_t first_action = Z2S_findNextActionPosition(0);
@@ -5138,6 +6078,10 @@ void buildActionsTabGUI() {
 	action_copy_button = ESPUI.addControl(
 	  Control::Type::Button, empty_str, "COPY ACTION", Control::Color::Dark,
 	  action_new_button, actionsTableCallback, (void *)GUI_CB_ACTION_COPY_FLAG);
+	
+	action_chain_button = ESPUI.addControl(
+	  Control::Type::Button, empty_str, "CHAIN ACTION", Control::Color::Dark,
+	  action_new_button, actionsTableCallback, (void *)GUI_CB_ACTION_CHAIN_FLAG);
 
 	action_save_button = ESPUI.addControl(
 	  Control::Type::Button, empty_str, "SAVE ACTION", Control::Color::Dark,
@@ -5158,79 +6102,276 @@ void buildActionsTabGUI() {
 
 	ESPUI.setPanelWide(action_new_button, true);
 
-	action_enabled_switcher = ESPUI.addControl(
-	  Control::Type::Switcher, "Action details", (long int)0,
-	  Control::Color::Dark, actions_tab, generalCallback);
+	action_details_label = ESPUI.addControl(
+	  Control::Type::Label, "Action details", empty_str, Control::Color::Dark,
+	  actions_tab);
 
-	addClearLabel(
-	  "&#10023; action enabled &#10023;", action_enabled_switcher);
+	ESPUI.setElementStyle(action_details_label, clearLabelStyle);
+
+	action_enabled_switcher = ESPUI.addControl(
+	  Control::Type::Switcher, "action enabled" , (long int)0,
+	  Control::Color::Dark, action_details_label, generalCallback);
+
+	ESPUI.setElementStyle(
+	  action_enabled_switcher, "width: calc(20% - 10px); min-width: "
+		"80px; margin: 0 5px 10px 5px;");
 
 	action_name_text = ESPUI.addControl(
-	  Control::Type::Text, empty_str, emptyString,
-	  Control::Color::Dark, action_enabled_switcher, generalCallback);
+	  Control::Type::Text, "action name (max 32 characters)", emptyString,
+	  Control::Color::Dark, action_details_label, generalCallback);
 
 	ESPUI.getControl(action_name_text)->reserve(33);
 
-	addClearLabel(
-	  "&#10023; action name (max 32 characters) &#10023;",
-	  action_enabled_switcher);
+	ESPUI.setElementStyle(
+	  action_name_text, "width: calc(40% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_description_text = ESPUI.addControl(
-	  Control::Type::Text, empty_str, emptyString, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Text, "action short description (max 127 characters)", 
+		emptyString, Control::Color::Dark, action_details_label, generalCallback);
 
 	ESPUI.getControl(action_description_text)->reserve(128);
 
-	addClearLabel(
-	  "&#10023; action short description (max 127 characters) &#10023;",
-	  action_enabled_switcher);
+	ESPUI.setElementStyle(
+	  action_description_text, "width: calc(40% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_source_channel_selector = ESPUI.addControl(
-	  Control::Type::Select, empty_str, (long int)-1, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Select, "Source Supla channel", (long int)-1, 
+		Control::Color::Dark, action_details_label, generalCallback);
+
+	ESPUI.setElementStyle(
+	  action_source_channel_selector, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_event_selector = ESPUI.addControl(
-	  Control::Type::Select, empty_str, (long int)-1, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Select, "Supla event", (long int)-1, Control::Color::Dark,
+	  action_details_label, generalCallback);
+
+	ESPUI.setElementStyle(
+	  action_event_selector, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_destination_channel_selector = ESPUI.addControl(
-	  Control::Type::Select, empty_str, (long int)-1, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Select, "Destination Supla channel", (long int)-1, 
+		Control::Color::Dark, action_details_label, generalCallback);
+
+	ESPUI.setElementStyle(
+	  action_destination_channel_selector, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_action_selector = ESPUI.addControl(
-	  Control::Type::Select, empty_str, (long int)-1, Control::Color::Dark,
-	  action_enabled_switcher, actionSelectorCallback);
+	  Control::Type::Select, "Supla action", (long int)-1, Control::Color::Dark,
+	  action_details_label, actionSelectorCallback);
+
+	ESPUI.setElementStyle(
+	  action_action_selector, "width: calc(25% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_subaction_number = ESPUI.addControl(
 	  Control::Type::Number, "Subaction ID", (long int)0,
-	  Control::Color::Dark, action_enabled_switcher, generalMinMaxCallback,
+	  Control::Color::Dark, action_details_label, generalMinMaxCallback,
 	  (void *)100);
 
-	addClearLabel(
-	  "&#10023;Enter subaction ID &#10023;", action_enabled_switcher);
+	ESPUI.setElementStyle(
+	  action_subaction_number, "width: calc(30% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	working_str = "0.00";
 	action_condition_threshold_1_number = ESPUI.addControl(
-	  Control::Type::Text, empty_str, working_str, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Text, "condition main threshold value (for =, >, <, ≥, ≤)"
+		"<br>enter number ie. 21.5 or -8.0", working_str, Control::Color::Dark,
+	  action_details_label, generalCallback);
 
-	addClearLabel(
-	  "&#10023; condition main threshold value (for =, >, <, ≥, ≤) &#10023;"
-	  "<br>enter number ie. 21.5 or -8.0",
-	  action_enabled_switcher);
+	ESPUI.setElementStyle(
+	  action_condition_threshold_1_number, "width: calc(35% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
 	action_condition_threshold_2_number = ESPUI.addControl(
-	  Control::Type::Text, empty_str, working_str, Control::Color::Dark,
-	  action_enabled_switcher, generalCallback);
+	  Control::Type::Text, "condition secondary threshold value (only for"
+		" between)<br>enter number ie. 21.5 or -8.0", working_str, 
+		Control::Color::Dark, action_details_label, generalCallback);
+	
+	ESPUI.setElementStyle(
+	  action_condition_threshold_2_number, "width: calc(35% - 10px); min-width: "
+		"220px; margin: 0 5px 10px 5px;");
 
-	addClearLabel(
-	  "&#10023; condition secondary threshold value (only for between)"
-	  " &#10023;<br>enter number ie. 21.5 or -8.0",
-	  action_enabled_switcher);
+	ESPUI.setPanelWide(action_details_label, true);
 
 	enableActionDetails(false);
 	updateActionButtons();
 }
+
+/*****************************************************************************/
+
+/*****************************************************************************/
+
+void enableIrTable(bool enable) {
+  
+	char json_payload[256];
+  snprintf(
+    json_payload, sizeof(json_payload),
+    "{\"type\":\"EXEC_JS\",\"code\":\" setTableDisabled('id%u', %s); \"}",
+    ir_codes_table_label, enable ? "false" : "true");
+  ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+}
+
+/*****************************************************************************/
+
+void enableIrCodeDetails(bool enable) {
+
+  if (!enable) {
+    working_str = empty_str;
+    ESPUI.updateText(ir_code_name_text, working_str);
+    ESPUI.updateText(ir_code_base64_text, working_str);
+  }
+  enableControlStyle(ir_code_details_label, enable);
+  enableControlStyle(ir_code_name_text, enable);
+  enableControlStyle(ir_code_base64_text, enable);
+}
+
+/*****************************************************************************/
+
+void updateIrCodeButtons() {
+
+  bool has_device = (current_ir_device_id >= 0);
+  bool has_selected_code = (current_ir_code_id >= 0);
+  bool is_viewing = (current_ir_gui_state == VIEW_IR_CODE);
+  bool is_learning = ir_code_learning_gui_active;
+
+  enableControlStyle(ir_device_selector, is_viewing && !is_learning);
+
+  enableControlStyle(ir_code_new_button, is_viewing && !is_learning);
+  enableControlStyle(
+    ir_code_edit_button, is_viewing && has_selected_code && !is_learning);
+  enableControlStyle(
+    ir_code_copy_button, is_viewing && has_selected_code && !is_learning);
+  enableControlStyle(
+    ir_code_remove_button, is_viewing && has_selected_code && !is_learning);
+
+  enableControlStyle(ir_code_save_button, !is_viewing && !is_learning);
+  enableControlStyle(ir_code_cancel_button, !is_viewing || is_learning);
+
+  enableControlStyle(ir_code_learn_button, has_device && !is_learning);
+  enableControlStyle(
+    ir_code_send_button,
+    has_device && is_viewing && has_selected_code && !is_learning);
+}
+
+/*****************************************************************************/
+
+void buildIrRemoteTabGUI() {
+
+  int16_t first_ir_code = irCodesStorage.findNext(0);
+
+  if (first_ir_code >= 0) {
+    current_ir_code_id = first_ir_code;
+    current_ir_code_counter = irCodesStorage.getCounter(first_ir_code);
+  }
+	
+	auto ir_tab = ESPUI.addControl(
+    Control::Type::Tab, empty_str, "IR remote devices",
+    Control::Color::Dark, Control::noParent);
+  
+  ir_device_selector = ESPUI.addControl(
+    Control::Type::Select, "IR ZigBee devices", (long int)-1,
+    Control::Color::Dark, ir_tab, irDeviceSelectorCallback);
+
+  // Panel 2: IR Device Manufacturer / Model Label
+  working_str = three_dots_str;
+  ir_device_info_label = ESPUI.addControl(
+    Control::Type::Label, "IR ZigBee device", working_str,
+    Control::Color::Dark, ir_tab);
+
+  // Panel 3: IR Commands Table
+  ir_codes_table_label = ESPUI.addControl(
+    Control::Type::Label, "IR commands table", empty_str,
+    Control::Color::Dark, ir_tab);
+  ESPUI.setPanelWide(ir_codes_table_label, true);
+
+  // Panel 4: Action & Learn Buttons
+  ir_code_new_button = ESPUI.addControl(
+    Control::Type::Button, "IR commands management", "ADD CODE",
+    Control::Color::Dark, ir_tab, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_NEW_FLAG);
+
+  ir_code_edit_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "EDIT CODE",
+    Control::Color::Dark, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_EDIT_FLAG);
+
+  ir_code_copy_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "COPY CODE",
+    Control::Color::Dark, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_COPY_FLAG);
+
+  ir_code_save_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "SAVE CODE",
+    Control::Color::Dark, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_SAVE_FLAG);
+
+  ir_code_cancel_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "CANCEL",
+    Control::Color::Dark, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_CANCEL_FLAG);
+
+  ir_code_remove_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "DELETE CODE",
+    Control::Color::Alizarin, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_REMOVE_FLAG);
+
+  ir_code_learn_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "LEARN NEW CODE",
+    Control::Color::Emerald, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_LEARN_FLAG);
+
+  ir_code_send_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "TEST / SEND CODE",
+    Control::Color::Dark, ir_code_new_button, irCodesTableCallback,
+    (void *)GUI_CB_IR_CODE_SEND_FLAG);
+
+  ir_code_state_label = ESPUI.addControl(
+    Control::Type::Label, empty_str, three_dots_str,
+    Control::Color::Dark, ir_code_new_button);
+
+  ESPUI.setPanelWide(ir_code_new_button, true);
+
+  // Panel 5: IR Code Editor (Name + Base64 Textarea)
+  ir_code_details_label = ESPUI.addControl(
+    Control::Type::Label, "IR command details", empty_str,
+    Control::Color::Dark, ir_tab);
+  ESPUI.setElementStyle(ir_code_details_label, clearLabelStyle);
+
+  ir_code_name_text = ESPUI.addControl(
+    Control::Type::Text, "Command name (max 31 characters)", emptyString,
+    Control::Color::Dark, ir_code_details_label, generalCallback);
+  ESPUI.getControl(ir_code_name_text)->reserve(32);
+  ESPUI.setElementStyle(
+    ir_code_name_text,
+    "width: calc(30% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+
+  ir_code_base64_text = ESPUI.addControl(
+    Control::Type::Text, "Base64 IR code (click LEARN NEW CODE or paste Base64)",
+    emptyString, Control::Color::Dark, ir_code_details_label, generalCallback);
+  ESPUI.getControl(ir_code_base64_text)->reserve(IR_CODE_BASE64_MAX_SIZE);
+
+  BasicControl *ir_base64_textarea = ESPUI.getControl(ir_code_base64_text);
+  ir_base64_textarea->control_flags |= CONTROL_FLAG_TEXTAREA;
+  ir_base64_textarea->rows = 4;
+  ir_base64_textarea->cols = 64;
+
+  ESPUI.setElementStyle(
+    ir_code_base64_text,
+    "resize: none; width: calc(70% - 10px); min-width: 260px; "
+    "margin: 0 5px 10px 5px;");
+
+  ESPUI.setPanelWide(ir_code_details_label, true);
+
+  enableIrCodeDetails(false);
+  updateIrCodeButtons();
+}
+
+/*****************************************************************************/
 
 void Z2S_initWebGUI() {
 
@@ -5477,6 +6618,10 @@ void Z2S_buildWebGUI(gui_modes_t mode, uint32_t gui_custom_flags) {
 		buildSwitchBotTabGUI();
 	}
 
+	if (gui_build_control_flags & GUI_BUILD_CONTROL_FLAG_IR) {
+		buildIrRemoteTabGUI();
+	}
+
 	if (gui_build_control_flags & GUI_BUILD_CONTROL_FLAG_MD) {
 
 		Z2S_buildMultiDeviceTabGUI();
@@ -5488,6 +6633,7 @@ void Z2S_buildWebGUI(gui_modes_t mode, uint32_t gui_custom_flags) {
 
 	GUIbuilt = true;
 	ESPUI.setOnWsConnectCallback(onWsConnectCallback);
+	ESPUI.setOnWsCustomCmdCallback(onWsCustomCmdCallback);
 }
 
 
@@ -5816,7 +6962,7 @@ void guiGitHubOtaProgress(size_t current, size_t total) {
 
 void Z2S_loopWebGUI() {
 
-	if (new_connect) {
+	/*if (new_connect) {
 
 		if (ESPUI.isSynchronized()) {
 
@@ -5834,7 +6980,7 @@ void Z2S_loopWebGUI() {
 
 			//log_i("not yet synchronized");
 		}
-	}
+	}*/
 
 	uint32_t local_func = 0;
 
@@ -5845,6 +6991,22 @@ void Z2S_loopWebGUI() {
 	       == pdTRUE) {
 
 		switch (pending_gui_command->gui_command) {
+
+
+			case gui_cmd_synchronize_all: {
+
+				sortZbDevicesSelectorsMain();
+				sortChannelsSelectorsMain();
+				sortActionsEventsSelectorsMain();
+				sortClustersSelectorsMain();
+				sortAttributesSelectorsMain();
+				sortAttributeValuesSelectorsMain();
+				sortTuyaDatapointsSelectorsMain();
+				buildActionsTableJsonPayload(actions_table_label_2, 0);
+				buildIrCodesTableJsonPayload(ir_codes_table_label, 0);
+				buildPushoverMessagesTableJsonPayload(
+				  pushover_messages_table_label, 0);
+			} break;
 
 
 			case gui_cmd_check_github_ota:
@@ -6398,10 +7560,137 @@ void Z2S_loopWebGUI() {
 					}
 				}
 				break;
+
+
+			case gui_cmd_ir_device_callback: {
+				irDeviceSelectorCmd(pending_gui_command->gui_command_value);
+			} break;
+
+
+			case gui_cmd_build_ir_codes_table: {
+				buildIrCodesTableJsonPayload(
+				  ir_codes_table_label, pending_gui_command->gui_command_value);
+				enableIrTable(true);
+				updateIrCodeButtons();
+			} break;
+
+
+			case gui_cmd_edit_ir_codes_table: {
+				sendIrCodeRowEdit(
+				  ir_codes_table_label, pending_gui_command->gui_command_value);
+				enableIrTable(true);
+				updateIrCodeButtons();
+			} break;
+
+
+			case gui_cmd_learn_ir_code: {
+				int32_t val = pending_gui_command->gui_command_value;
+				if (val >= 0) {
+					Z2S_Device *dev = Z2S_Device::getZ2SDeviceByDeviceIndex(val);
+					if (dev) {
+						startLearnIRCode(dev->getDeviceShortAddress(), 1);
+					}
+				} else {
+					int32_t cancel_dev_idx = (-val) - 1;
+					Z2S_Device *dev = Z2S_Device::getZ2SDeviceByDeviceIndex(cancel_dev_idx);
+					if (dev) {
+						cancelLearnIRCode(dev->getDeviceShortAddress(), 1);
+					}
+				}
+			} break;
+
+			case gui_cmd_ir_code_learned: {
+				if (!ir_code_learning_gui_active) {
+					break; // Ignore late packet if user already cancelled
+				}
+				ir_code_learning_gui_active = false;
+
+				// Automatically open NEW_IR_CODE if in VIEW mode, or fill textarea directly!
+				if (current_ir_gui_state == VIEW_IR_CODE && current_ir_device_id >= 0) {
+					new_ir_code_id = irCodesStorage.findFreeIndex();
+					if (new_ir_code_id >= 0) {
+						current_ir_gui_state = NEW_IR_CODE;
+						enableIrCodeDetails(true);
+						enableIrTable(false);
+					}
+				}
+				updateIrCodeButtons();
+				working_str = getLearnedIrCodeBase64();
+				ESPUI.updateText(ir_code_base64_text, working_str);
+				ESPUI.updateLabel(
+				  ir_code_state_label,
+				  "IR code received & decoded! Enter a name and click SAVE CODE.");
+			} break;
+
+			case gui_cmd_send_ir_code: {
+				z2s_ir_code_t ir_code = {};
+				Z2S_Device *dev = Z2S_Device::getZ2SDeviceByDeviceIndex(current_ir_device_id);
+				if (dev && irCodesStorage.load(pending_gui_command->gui_command_value, ir_code)) {
+					
+					sendLearnedIRCode(
+					  dev->getDeviceShortAddress(), 1, ir_code.ir_code_base64);
+					ESPUI.updateLabel(ir_code_state_label, "IR code transmission started!");
+				}
+			} break;
+
+
+			case gui_cmd_delete_ir_code: {
+				
+				z2s_ir_code_t ir_code = {};
+        bool loaded = irCodesStorage.load(current_ir_code_id, ir_code);
+        
+        if (loaded && irCodesStorage.remove(current_ir_code_id)) {
+          // Find next available code or reset selection
+          int16_t next_code = irCodesStorage.findNext(0);
+          if (next_code >= 0) {
+            current_ir_code_id = next_code;
+            current_ir_code_counter = irCodesStorage.getCounter(next_code);
+          } else {
+            current_ir_code_id = -1;
+            current_ir_code_counter = -1;
+            enableIrCodeDetails(false);
+          }
+
+          buildIrCodesTableJsonPayload(ir_codes_table_label, 0);
+          updateIrCodeButtons();
+          ESPUI.updateLabel(ir_code_state_label, "IR code deleted successfully!");
+        } else {
+          ESPUI.updateLabel(ir_code_state_label, "Failed to delete IR code!");
+        }
+			} break;
+
+
+			case gui_cmd_pushover_message_callback: {
+
+				pushoverMessagesCallbackMain(
+				  pending_gui_command->gui_command_value);
+			} break;
+
+
+			case gui_cmd_build_pushover_messages_table: {
+
+				buildPushoverMessagesTableJsonPayload(
+				  pushover_messages_table_label,
+				  pending_gui_command->gui_command_value);
+				enablePushoverTable(true);
+				updatePushoverMessageButtons();
+			} break;
+
+
+			case gui_cmd_edit_pushover_messages_table: {
+
+				sendPushoverMessageRowEdit(
+				  pushover_messages_table_label,
+				  pending_gui_command->gui_command_value);
+				enablePushoverTable(true);
+				updatePushoverMessageButtons();
+			} break;
 		}
 		pending_gui_command->in_use = false;
 	}
 }
+
+/*****************************************************************************/
 
 void enterWifiDetailsCallback(BasicControl *sender, int type, void *param) {
 
@@ -6430,6 +7719,8 @@ void enterWifiDetailsCallback(BasicControl *sender, int type, void *param) {
 	}
 }
 
+/*****************************************************************************/
+
 void textCallback(BasicControl *sender, int type, void *param) {
 
 	if ((ESPUI.getControl(wifi_ssid_text)->getValue().length() > 0) && 
@@ -6447,6 +7738,8 @@ void textCallback(BasicControl *sender, int type, void *param) {
 	}
 }
 
+/*****************************************************************************/
+
 void generalCallback(BasicControl *sender, int type, void *param) {
 
 	/*Serial.print("CB: id(");
@@ -6459,9 +7752,37 @@ void generalCallback(BasicControl *sender, int type, void *param) {
 	//Serial.println(sender->getValue());
 }
 
+/*****************************************************************************/
+
 void hiddenNumberCallback(BasicControl *sender, int type, void *param) {
 
-	current_action_id = Z2S_getActionPosition(sender->getValueInt() + 1);
+	int32_t raw_val = sender->getValueInt();
+
+	if (raw_val & 0x4000) {
+		uint16_t row_idx = raw_val & 0x3FFF;
+		current_ir_code_id = irCodesStorage.getPosition(row_idx + 1);
+		current_ir_code_counter = irCodesStorage.getCounter(
+			current_ir_code_id);
+
+		log_i(
+			"current_ir_code_id %d, current_ir_code_counter %d",
+			current_ir_code_id, current_ir_code_counter);
+		return;
+	}
+
+	if (raw_val & 0x2000) {
+		uint16_t row_idx = raw_val & 0x1FFF;
+		current_message_id = Z2S_getPushoverMessagePosition(row_idx + 1);
+		current_message_counter = Z2S_getPushoverMessageCounter(
+			current_message_id);
+
+		log_i(
+			"current_message_id %d, current_message_counter %d",
+			current_message_id, current_message_counter);
+		return;
+	}
+
+	current_action_id = Z2S_getActionPosition(raw_val + 1);
 	current_action_counter = Z2S_getActionCounter(current_action_id);
 
 	log_i(
@@ -6469,17 +7790,19 @@ void hiddenNumberCallback(BasicControl *sender, int type, void *param) {
 		current_action_counter);
 }
 
-
+/*****************************************************************************/
 
 void onZigbeeTabCallback(BasicControl *sender, int type, void *param) {
 
 	ESPUI.updateNumber(pairing_mode_switcher, Zigbee.isNetworkOpen() ? 1 : 0);
-	ESPUI.updateNumber(force_leave_switcher, force_leave_global_flag ? 1 : 0);
 }
+
+/*****************************************************************************/
 
 void onChannelsTabCallback(BasicControl *sender, int type, void *param) {
 }
 
+/*****************************************************************************/
 
 void generalMinMaxCallback(BasicControl *sender, int type, void *param) {
 
@@ -6494,6 +7817,8 @@ void generalMinMaxCallback(BasicControl *sender, int type, void *param) {
 		ESPUI.updateNumber(sender->GetId(), max_value);
 }
 
+/*****************************************************************************/
+
 void endpointCallback(BasicControl *sender, int type, void *param) {
 
 	Serial.print("CB: id(");
@@ -6503,6 +7828,8 @@ void endpointCallback(BasicControl *sender, int type, void *param) {
 	if (sender->getValueInt() > 255)
 		ESPUI.updateNumber(sender->GetId(), 255);
 }
+
+/*****************************************************************************/
 
 void enableDeviceControls(bool enable) {
 
@@ -6521,23 +7848,29 @@ void enableDeviceControls(bool enable) {
 	enableControlStyle(device_name_text, enable);
 	enableControlStyle(device_name_save_button, enable);
 
+
+	enableControlStyle(battery_panel_label, enable);
 	enableControlStyle(battery_voltage_min_number, enable);
 	enableControlStyle(battery_voltage_min_save_button, enable);
 	enableControlStyle(battery_voltage_max_number, enable);
 	enableControlStyle(battery_voltage_max_save_button, enable);
+	enableControlStyle(disable_battery_percentage_msg_switcher, enable);
+	enableControlStyle(disable_battery_voltage_msg_switcher, enable);
 
 	updateLabel_C(rssilabel, three_dots_str);
 
 	enableControlStyle(getswbuild_button, enable);
 	enableControlStyle(getrssi_button, enable);
 
-	//enableControlStyle(remove_device_button, enable);
 	enableControlStyle(remove_device_and_channels_button, enable);
 	enableControlStyle(remove_all_devices_button, true);
 	enableControlStyle(start_zigbee_ota_button, enable);
 
-	enable ? controls_enabled_flags |= DEVICES_CONTROLS_ENABLED_FLAG : controls_enabled_flags &= ~DEVICES_CONTROLS_ENABLED_FLAG;
+	enable ? controls_enabled_flags |= DEVICES_CONTROLS_ENABLED_FLAG : 
+		controls_enabled_flags &= ~DEVICES_CONTROLS_ENABLED_FLAG;
 }
+
+/*****************************************************************************/
 
 void enableClustersAttributesControls(bool enable) {
 
@@ -6762,7 +8095,7 @@ void enableChannelControls(bool enable) {
 	working_str = empty_str;
 	ESPUI.updateText(channel_name_text, working_str);
 
-	ESPUI.updateNumber(param_1_number, 0);
+	ESPUI.updateNumber(param_1_text, 0);
 	ESPUI.updateNumber(param_2_number, 0);
 	ESPUI.updateNumber(param_3_number, 0);
 	ESPUI.updateNumber(keepalive_number, 0);
@@ -6788,7 +8121,7 @@ void enableChannelControls(bool enable) {
 	enableControlStyle(set_sorwns_on_start_switcher, enable);
 	enableControlStyle(enable_resend_temperature_switcher, enable);
 	enableControlStyle(skip_subdevice_registation_switcher, enable);
-	enableControlStyle(param_1_number, enable);
+	enableControlStyle(param_1_text, enable);
 	enableControlStyle(param_2_number, enable);
 	enableControlStyle(param_3_number, enable);
 	enableControlStyle(param_1_save_button, enable);
@@ -6911,16 +8244,15 @@ void enableChannelParams(uint8_t params_mask) {
 
 	if (params_mask & 1) {
 
-		enableControlStyle(param_1_number, true);
+		enableControlStyle(param_1_text, true);
 		enableControlStyle(param_1_save_button, true);
-
 	} else {
 
-		ESPUI.updateNumber(param_1_number, 0);
+		ESPUI.updateNumber(param_1_text, 0);
 		char *working_str_ptr =
 		  "&#10023; PARAM(1) - currently not used &#10023;";
 		ESPUI.updateLabel(param_1_desc_label, working_str_ptr);
-		enableControlStyle(param_1_number, false);
+		enableControlStyle(param_1_text, false);
 		enableControlStyle(param_1_save_button, false);
 	}
 
@@ -6977,7 +8309,7 @@ void fillRemoteAddressData(uint8_t channel_slot) {
 
 		IPAddress ip(z2s_core->getRemoteIPAddress());
 
-		ESPUI.updateText(param_1_number, ip.toString());
+		ESPUI.updateText(param_1_text, ip.toString());
 
 		ESPUI.updateNumber(param_2_number, z2s_core->getSuplaRemoteChannel());
 	} else {
@@ -6987,7 +8319,7 @@ void fillRemoteAddressData(uint8_t channel_slot) {
 			  general_purpose_gui_buffer, "mdns://%s", z2s_core->getMDNSName());
 
 			working_str = general_purpose_gui_buffer;
-			ESPUI.updateText(param_1_number, working_str);
+			ESPUI.updateText(param_1_text, working_str);
 
 			ESPUI.updateNumber(param_2_number, z2s_core->getSuplaRemoteChannel());
 		}
@@ -7200,7 +8532,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 					  "&#10023; Enter local relay GPIO pin number &#10023;";
 
 					ESPUI.updateLabel(param_1_desc_label, working_str_ptr);
-					ESPUI.updateNumber(param_1_number, z2s_core->getLocalRelayGpioPin());
+					ESPUI.updateNumber(param_1_text, z2s_core->getLocalRelayGpioPin());
 
 					working_str_ptr = "&#10023; Enter local relay ON value &#10023;";
 					ESPUI.updateLabel(param_2_desc_label, working_str_ptr);
@@ -7216,7 +8548,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 					  "&#10023; Enter local hvac GPIO pin number &#10023;";
 
 					ESPUI.updateLabel(param_1_desc_label, working_str_ptr);
-					ESPUI.updateNumber(param_1_number, z2s_core->getLocalHvacGpioPin());
+					ESPUI.updateNumber(param_1_text, z2s_core->getLocalHvacGpioPin());
 
 					working_str_ptr = "&#10023; Enter local hvac ON value &#10023;";
 					ESPUI.updateLabel(param_2_desc_label, working_str_ptr);
@@ -7232,7 +8564,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 					  "&#10023; Enter local binary GPIO pin number &#10023;";
 
 					ESPUI.updateLabel(param_1_desc_label, working_str_ptr);
-					ESPUI.updateNumber(param_1_number, z2s_core->getLocalBinaryGpioPin());
+					ESPUI.updateNumber(param_1_text, z2s_core->getLocalBinaryGpioPin());
 
 					working_str_ptr = "&#10023; Enter local binary logic type value "
 					                  "&#10023;<br> 0 = normal logic, 1 = inverted logic";
@@ -7266,7 +8598,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 						working_str = ds_address_str;
 					} else
 						working_str = empty_str;
-					ESPUI.updateText(param_1_number, working_str);
+					ESPUI.updateText(param_1_text, working_str);
 
 					working_str_ptr = "&#10023; Enter local DS18B20 pin value &#10023;";
 					ESPUI.updateLabel(param_2_desc_label, working_str_ptr);
@@ -7291,7 +8623,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 					  z2s_core->getLocalHCSR04MinOut(), z2s_core->getLocalHCSR04MaxOut());
 
 					working_str = general_purpose_gui_buffer;
-					ESPUI.updateText(param_1_number, working_str);
+					ESPUI.updateText(param_1_text, working_str);
 
 					/*working_str_ptr = "&#10023; Enter local hvac ON value &#10023;";
 				ESPUI.updateLabel(param_2_desc_label, working_str_ptr);
@@ -7330,7 +8662,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 				enableChannelParams(1);
 
 				ESPUI.updateNumber(
-				  param_1_number, z2s_channel.rain_intensity_treshold);
+				  param_1_text, z2s_channel.rain_intensity_treshold);
 
 				char *working_str_ptr =
 				  "&#10023; Virtual Binary custom param<br>"
@@ -7434,7 +8766,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 					enableChannelParams(1);
 
 					ESPUI.updateNumber(
-					  param_1_number, z2s_channel.hvac_fixed_temperature_correction);
+					  param_1_text, z2s_channel.hvac_fixed_temperature_correction);
 
 					char *working_str_ptr = "&#10023; Thermostat custom parameter<br>"
 					                        "enter calibration fixed value (temperature x100)<br>"
@@ -7458,7 +8790,7 @@ void updateChannelInfoLabel(int16_t channel_slot) {
 
 				enableChannelParams(1);
 
-				ESPUI.updateNumber(param_1_number, z2s_channel.rgb_color_mode);
+				ESPUI.updateNumber(param_1_text, z2s_channel.rgb_color_mode);
 
 				char *working_str_ptr = "&#10023; RGB custom param<br>"
 				                        "enter numeric value to select RGB MODE &#10023;";
@@ -8487,8 +9819,7 @@ void removeChannelCallbackCmd() {
 
 				sprintf_P(
 				  general_purpose_gui_buffer, "Local channel #%02u with all "
-				                              "actions removed.",
-				  channel_number);
+				  "actions removed.", channel_number);
 
 				updateLabel_P(channel_status_label, general_purpose_gui_buffer);
 			} else {
@@ -8561,22 +9892,24 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 
 					int8_t zb_tx_power;
 					esp_zb_get_tx_power(&zb_tx_power);
+
 					log_i("get tx power %d", zb_tx_power);
-					working_str = zb_tx_power;
-					ESPUI.updateText(zigbee_tx_power_text, working_str);
+
+					ESPUI.updateNumber(zigbee_tx_power_number, zb_tx_power);
 				}
 				break;
 
-			case GUI_CB_SET_TX_FLAG:
-				{  //update TX power
+			case GUI_CB_SET_TX_FLAG: {  //update TX power
 
-					if ((ESPUI.getControl(zigbee_tx_power_text)->getValueInt() >= -24) && (ESPUI.getControl(zigbee_tx_power_text)->getValueInt() <= 20))
-						esp_zb_set_tx_power(
-						  ESPUI.getControl(zigbee_tx_power_text)->getValueInt());
-					else
-						ESPUI.updateText(zigbee_tx_power_text, zigbee_tx_power_text_str);
-				}
-				break;
+				int8_t zb_tx_power = ESPUI.getControl(
+					zigbee_tx_power_number)->getValueInt();
+
+				log_i("TX power %d", zb_tx_power);
+				if ((zb_tx_power >= -24) && (zb_tx_power <= 20))
+					esp_zb_set_tx_power(zb_tx_power);
+				else
+					ESPUI.updateNumber(zigbee_tx_power_number, 0);
+			} break;
 
 
 			case GUI_CB_GET_PC_FLAG:
@@ -8596,7 +9929,7 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 						}
 					}
 					ESPUI.updateLabel(
-					  zigbee_primary_channel_label, zigbee_primary_channel_info_str);
+					  zigbee_primary_channel_label, empty_str);
 				}
 				break;
 
@@ -8605,23 +9938,19 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 				{  //write primary channel
 
 					if ((ESPUI.getControl(
-					            zigbee_primary_channel_text)
-					       ->getValueInt()
-					     >= 11)
-					    && (ESPUI.getControl(
-					               zigbee_primary_channel_text)
-					          ->getValueInt()
-					        <= 26)) {
+					    	zigbee_primary_channel_text)->getValueInt()>= 11) && 
+							(ESPUI.getControl(
+					      zigbee_primary_channel_text)->getValueInt() <= 26)) {
 
 						uint32_t zb_primary_channel = ESPUI.getControl(
-						                                     zigbee_primary_channel_text)
-						                                ->getValueInt();
+						  zigbee_primary_channel_text)->getValueInt();
 
 						if (Supla::Storage::ConfigInstance()->setUInt32(
 						      Z2S_ZIGBEE_PRIMARY_CHANNEL, (1 << zb_primary_channel))) {
 
 							ESPUI.updateLabel(
-							  zigbee_primary_channel_label, zigbee_primary_channel_update_str);
+							  zigbee_primary_channel_label, 
+								zigbee_primary_channel_update_str);
 
 							log_i(
 							  "New Zigbee primary channel set to 0x%08X",
@@ -8630,8 +9959,7 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 							Supla::Storage::ConfigInstance()->commit();
 						}
 					} else
-						ESPUI.updateLabel(
-						  zigbee_primary_channel_label, zigbee_primary_channel_info_str);
+						ESPUI.updateLabel(zigbee_primary_channel_label, empty_str);
 				}
 				break;
 
@@ -8640,10 +9968,7 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 				{
 
 					if (ESPUI.getControl(
-					           zigbee_installation_code_ieee_address)
-					      ->getValue()
-					      .length()
-					    != 16) {
+					    	zigbee_installation_code_ieee_address)->getValue().length() != 16) {
 
 						working_str =
 						  "Enter device IEEE address (16 characters), ie. 56AB23BE90004560";
@@ -8652,10 +9977,7 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 					}
 
 					if (ESPUI.getControl(
-					           zigbee_installation_code_str)
-					      ->getValue()
-					      .length()
-					    != 36) {
+					    	zigbee_installation_code_str)->getValue().length() != 36) {
 
 						working_str =
 						  "Enter device installation code (36 characters), ie. BC2356...";
@@ -8679,9 +10001,7 @@ void generalZigbeeCallback(BasicControl *sender, int type, void *param) {
 					for (uint8_t i = 0; i < 18; i++) {
 
 						working_str = ESPUI.getControl(
-						                     zigbee_installation_code_str)
-						                ->getValue()
-						                .substring(2 * i, 2 + 2 * i);
+						  zigbee_installation_code_str)->getValue().substring(2 * i, 2 + 2 * i);
 
 						device_installation_code[i] = strtoul(
 						  working_str.c_str(), nullptr, 16);
@@ -8754,7 +10074,7 @@ void editDeviceCallback(BasicControl *sender, int type, void *param) {
 
 uint32_t saveRemoteAddressData(uint8_t channel_slot) {
 
-	working_str = ESPUI.getControl(param_1_number)->getValue();
+	working_str = ESPUI.getControl(param_1_text)->getValue();
 
 	int8_t prefix_pos = working_str.indexOf("mdns://");
 
@@ -8880,7 +10200,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 										{
 
 											z2s_core->setLocalRelayGpioPin(
-											  ESPUI.getControl(param_1_number)->getValueInt(), true);
+											  ESPUI.getControl(param_1_text)->getValueInt(), true);
 
 											z2s_core->updateLocalRelayParams();
 										}
@@ -8891,7 +10211,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 										{
 
 											z2s_core->setLocalHvacGpioPin(
-											  ESPUI.getControl(param_1_number)->getValueInt(), true);
+											  ESPUI.getControl(param_1_text)->getValueInt(), true);
 
 											z2s_core->updateLocalHvacParams();
 										}
@@ -8901,7 +10221,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 										{
 
 											z2s_core->setLocalBinaryGpioPin(
-											  ESPUI.getControl(param_1_number)->getValueInt(), true);
+											  ESPUI.getControl(param_1_text)->getValueInt(), true);
 
 											z2s_core->updateLocalBinaryParams();
 										}
@@ -8914,7 +10234,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 											uint8_t parsedBytes[8] = { 0 };
 
 											if (hexToBytes(ESPUI.getControl(
-											                      param_1_number)
+											                      param_1_text)
 											                 ->getValueCstr(),
 											               parsedBytes)) {
 
@@ -8932,7 +10252,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 											long hcsr04_params[6];
 
 											size_t params_found = parseCsvNumbers(
-											  ESPUI.getControl(param_1_number)->getValueCstr(),
+											  ESPUI.getControl(param_1_text)->getValueCstr(),
 											  hcsr04_params, 6);
 
 											switch (params_found) {
@@ -8977,7 +10297,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 
 							updateHvacFixedCalibrationTemperature(
 							  channel_slot,
-							  ESPUI.getControl(param_1_number)->getValueInt());
+							  ESPUI.getControl(param_1_text)->getValueInt());
 							break;
 
 
@@ -8985,7 +10305,7 @@ void editChannelMain(uint32_t update_channel_flag) {
 							{
 
 								z2s_core->setChannelUserData1(
-								  ESPUI.getControl(param_1_number)->getValueInt());
+								  ESPUI.getControl(param_1_text)->getValueInt());
 							}
 							break;
 					}
@@ -10066,14 +11386,17 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 			case GUI_CB_ACTION_COPY_FLAG:
 				{
 
-					if ((current_action_gui_state != VIEW_ACTION) || (current_action_id == -1))
+					if ((current_action_gui_state != VIEW_ACTION) || 
+							(current_action_id == -1))
 						return;
 
 					new_action_id = Z2S_findFreeActionIndex();
 
 					if (new_action_id == -1) {
 
-						ESPUI.updateLabel(action_state_label, "Actions table is full - can't add new Z2S Action!");
+						ESPUI.updateLabel(
+							action_state_label, "Actions table is full - can't add new "
+							"Z2S Action!");
 						return;
 					}
 
@@ -10084,6 +11407,53 @@ void actionsTableCallback(BasicControl *sender, int type, void *param) {
 					updateActionDetails(new_action);
 					updateActionButtons();
 					enableActionsTable(false);
+				}
+				break;
+
+
+			case GUI_CB_ACTION_CHAIN_FLAG:
+				{
+					if ((current_action_gui_state != VIEW_ACTION) || 
+							(current_action_id == -1))
+						return;
+
+					new_action_id = Z2S_findFreeActionIndex();
+					if (new_action_id == -1) {
+						ESPUI.updateLabel(
+						  action_state_label,
+						  "Actions table is full - can't add new Z2S Action!");
+						return;
+					}
+
+					z2s_channel_action_t prev_action = {};
+					Z2S_loadAction(current_action_id, prev_action);
+
+					memset(&new_action, 0, sizeof(z2s_channel_action_t));
+					new_action.is_enabled = true;
+					new_action.src_Supla_channel = prev_action.dst_Supla_channel;
+					new_action.dst_Supla_channel = 0xFF; 
+					new_action.src_Supla_event = (Supla::Event)0xFFFF;
+					new_action.dst_Supla_action = (Supla::Action)0xFFFF;
+
+					snprintf(
+					  new_action.action_name, ACTION_NAME_MAX_SIZE, "Chain: %s",
+					  Z2S_Core::getZ2SChannelNameByChannelNumber(
+					    new_action.src_Supla_channel));
+
+					previous_action_gui_state = current_action_gui_state;
+					current_action_gui_state = COPY_ACTION; 
+					enableActionDetails(true);
+					updateActionDetails(new_action);
+					
+					ESPUI.updateSelect(action_event_selector, -1);
+					ESPUI.updateSelect(action_destination_channel_selector, -1);
+					ESPUI.updateSelect(action_action_selector, -1);
+					
+					updateActionButtons();
+					enableActionsTable(false);
+					ESPUI.updateLabel(
+					  action_state_label,"Chaining action: source channel pre-filled "
+						"from previous destination!");
 				}
 				break;
 
@@ -11339,16 +12709,17 @@ void saveSwitchbotCallback(BasicControl *sender, int type, void *param) {
 /*****************************************************************************/
 /*****************************************************************************/
 
-static uint16_t pushover_tab;
+/*static uint16_t pushover_tab;
 static uint16_t pushover_api_token_text;
 static uint16_t pushover_user_token_text;
 static uint16_t pushover_message_name_text;
 static uint16_t pushover_message_body_text;
 static uint16_t pushover_message_counter_label;
-char pushover_message_counter[16];
+char pushover_message_counter[16];*/
+
 
 /*****************************************************************************/
-
+/*
 void updatePushoverMessageCounter() {
 
 	if (Z2S_getPushoverMessagesNumber() > 0)
@@ -11360,9 +12731,9 @@ void updatePushoverMessageCounter() {
 		  pushover_message_counter, 16, "No Pushover messages");
 	ESPUI.updateLabel(pushover_message_counter_label, pushover_message_counter);
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void enablePushoverMessageDetails(bool enable) {
 
 	if (!enable) {
@@ -11371,9 +12742,9 @@ void enablePushoverMessageDetails(bool enable) {
 	enableControlStyle(pushover_message_name_text, enable);
 	enableControlStyle(pushover_message_body_text, enable);
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void enablePushoverMessageControls(bool enable) {
 
 	enableControlStyle(pushover_message_first_button, enable);
@@ -11381,9 +12752,9 @@ void enablePushoverMessageControls(bool enable) {
 	enableControlStyle(pushover_message_prev_button, enable);
 	enableControlStyle(pushover_message_last_button, enable);
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void updatePushoverMessageButtons() {
 
 	bool pushover_message_save_button_enable;
@@ -11470,9 +12841,9 @@ void updatePushoverMessageButtons() {
 
 	updatePushoverMessageCounter();
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void updatePushoverMessageDetails(
   z2s_pushover_message_t &message, bool empty_message = false) {
 
@@ -11500,9 +12871,9 @@ void updatePushoverMessageDetails(
 	working_str = empty_message ? empty_str : message.pushover_message_text;
 	ESPUI.updateText(pushover_message_body_text, working_str);
 }
-
+*/
 /*****************************************************************************/
-
+/*
 bool fillPushoverMessageDetails(z2s_pushover_message_t &message) {
 
 	const char *pushover_message_name_str = ESPUI.getControl(
@@ -11549,9 +12920,9 @@ bool fillPushoverMessageDetails(z2s_pushover_message_t &message) {
 
 	return true;
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void pushoverMessagesCallback(BasicControl *sender, int type, void *param) {
 
 	if (type == B_UP) {
@@ -11834,14 +13205,14 @@ void pushoverMessagesCallback(BasicControl *sender, int type, void *param) {
 		}
 	}
 }
-
+*/
 /*****************************************************************************/
-
+/*
 void addPushoverMessageCallback(BasicControl *sender, int type, void *param) {
 }
 
 /*****************************************************************************/
-
+/*
 void buildPushoverTabGUI() {
 
 	//char general_purpose_gui_buffer[768] = {};
@@ -11989,7 +13360,7 @@ void buildPushoverTabGUI() {
 	enablePushoverMessageDetails(false);
 	updatePushoverMessageButtons();
 }
-
+*/
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -12054,13 +13425,807 @@ void GUI_onZigbeeOpenNetwork(bool is_network_open) {
 	if (pairing_mode_switcher < 0xFFFF) {
 
 		ESPUI.updateNumber(pairing_mode_switcher, is_network_open ? 1 : 0);
-
-		if (!is_network_open) {
-
-			force_leave_global_flag = false;
-			ESPUI.updateNumber(force_leave_switcher, 0);
-		}
 	}
 }
+
+/*****************************************************************************/
+
+void irDeviceSelectorCallback(BasicControl *sender, int type, void *param) {
+
+	int32_t device_slot = (sender) ? sender->getValueInt() : type;
+
+	addGUICommand(gui_cmd_ir_device_callback, device_slot);
+}
+
+/*****************************************************************************/
+
+void irDeviceSelectorCmd(int32_t device_slot) {
+
+	char buf[256] = {};
+	current_ir_device_id = device_slot;
+
+	ir_code_learning_gui_active = false;
+
+	if (device_slot >= 0) {
+		Z2S_Device *z2s_device = Z2S_Device::getZ2SDeviceByDeviceIndex(device_slot);
+		if (z2s_device) {
+			snprintf_P(
+			  buf, sizeof(buf),
+			  "<b><i>Manufacturer name</i></b> %s <b>| <i>model ID</i></b> %s "
+			  "<b>| <i>Short addr</i></b> 0x%04X",
+			  z2s_device->getManufacturerName(), z2s_device->getModelName(),
+			  z2s_device->getDeviceShortAddress());
+			updateLabel_P(ir_device_info_label, buf);
+		}
+	} else {
+		updateLabel_C(ir_device_info_label, three_dots_str);
+	}
+
+	updateIrCodeButtons();
+}
+
+/*****************************************************************************/
+
+void irCodesTableCallback(BasicControl *sender, int type, void *param) {
+
+	if (type != B_UP) return;
+
+	z2s_ir_code_t ir_code = {};
+
+	switch ((uint32_t)param) {
+
+
+		case GUI_CB_IR_CODE_NEW_FLAG: {
+
+			if (current_ir_gui_state != VIEW_IR_CODE) return;
+			new_ir_code_id = irCodesStorage.findFreeIndex();
+			if (new_ir_code_id < 0) {
+				ESPUI.updateLabel(ir_code_state_label, "IR codes storage is full!");
+				return;
+			}
+			current_ir_gui_state = NEW_IR_CODE;
+			enableIrCodeDetails(true);
+			if (strlen(getLearnedIrCodeBase64()) > 0) {
+				working_str = getLearnedIrCodeBase64();
+				ESPUI.updateText(ir_code_base64_text, working_str);
+			}
+			updateIrCodeButtons();
+			enableIrTable(false);
+		} break;
+
+
+		case GUI_CB_IR_CODE_EDIT_FLAG: {
+			
+			if (current_ir_gui_state != VIEW_IR_CODE || current_ir_code_id < 0) 
+				return;
+			
+			if (!irCodesStorage.load(current_ir_code_id, ir_code)) 
+				return;
+
+			current_ir_gui_state = EDIT_IR_CODE;
+			enableIrCodeDetails(true);
+			working_str = ir_code.ir_code_name;
+			ESPUI.updateText(ir_code_name_text, working_str);
+			working_str = ir_code.ir_code_base64;
+			ESPUI.updateText(ir_code_base64_text, working_str);
+			updateIrCodeButtons();
+			enableIrTable(false);
+		} break;
+
+
+		case GUI_CB_IR_CODE_COPY_FLAG: {
+
+			if (current_ir_gui_state != VIEW_IR_CODE || current_ir_code_id < 0) 
+				return;
+			
+			new_ir_code_id = irCodesStorage.findFreeIndex();
+			
+			if (new_ir_code_id < 0) {
+				
+				ESPUI.updateLabel(ir_code_state_label, "IR codes storage is full!");
+				return;
+			}
+
+			if (!irCodesStorage.load(current_ir_code_id, ir_code)) 
+				return;
+
+			current_ir_gui_state = COPY_IR_CODE;
+			enableIrCodeDetails(true);
+			working_str = ir_code.ir_code_name;
+			ESPUI.updateText(ir_code_name_text, working_str);
+			working_str = ir_code.ir_code_base64;
+			ESPUI.updateText(ir_code_base64_text, working_str);
+			updateIrCodeButtons();
+			enableIrTable(false);
+		} break;
+
+
+		case GUI_CB_IR_CODE_SAVE_FLAG: {
+
+			if (current_ir_gui_state == VIEW_IR_CODE) 
+				return;
+
+			const char *name_str = ESPUI.getControl(
+				ir_code_name_text)->getValueCstr();
+			const char *b64_str = ESPUI.getControl(
+				ir_code_base64_text)->getValueCstr();
+
+			if (strlen(name_str) == 0 || strlen(b64_str) == 0) {
+				ESPUI.updateLabel(
+					ir_code_state_label, "Name and Base64 code are required!");
+				return;
+			}
+
+			size_t name_len = mbstrnlen(name_str, IR_CODE_NAME_MAX_SIZE - 1);
+			strncpy(ir_code.ir_code_name, name_str, name_len);
+			ir_code.ir_code_name[name_len] = '\0';
+
+			strncpy(ir_code.ir_code_base64, b64_str, IR_CODE_BASE64_MAX_SIZE - 1);
+			ir_code.ir_code_base64[IR_CODE_BASE64_MAX_SIZE - 1] = '\0';
+
+			bool is_edit = (current_ir_gui_state == EDIT_IR_CODE);
+			int16_t target_slot = is_edit ? current_ir_code_id : new_ir_code_id;
+
+			if (irCodesStorage.save(target_slot, ir_code)) {
+				
+				current_ir_code_id = target_slot;
+				current_ir_code_counter = irCodesStorage.getCounter(
+					current_ir_code_id);
+				ESPUI.updateLabel(ir_code_state_label, "IR code saved successfully!");
+			} 
+			else {
+				
+				ESPUI.updateLabel(ir_code_state_label, "Saving IR code FAILED!");
+			}
+
+			current_ir_gui_state = VIEW_IR_CODE;
+			enableIrCodeDetails(false);
+
+			if (is_edit) {
+				addGUICommand(
+					gui_cmd_edit_ir_codes_table, current_ir_code_counter - 1);
+			} else {
+				addGUICommand(
+					gui_cmd_build_ir_codes_table, current_ir_code_counter - 1);
+			}
+			updateIrCodeButtons();
+		} break;
+
+
+		case GUI_CB_IR_CODE_CANCEL_FLAG: {
+        
+        if (ir_code_learning_gui_active) {
+          ir_code_learning_gui_active = false;
+
+          if (current_ir_device_id >= 0) {
+            addGUICommand(gui_cmd_learn_ir_code, -(current_ir_device_id + 1));
+          }
+
+          if (current_ir_gui_state == VIEW_IR_CODE) {
+            enableIrTable(true);
+          }
+          updateIrCodeButtons();
+          ESPUI.updateLabel(ir_code_state_label, "IR learning cancelled!");
+          return;
+        }
+
+        if ((current_ir_gui_state != NEW_IR_CODE) &&
+            (current_ir_gui_state != EDIT_IR_CODE) &&
+            (current_ir_gui_state != COPY_IR_CODE))
+          return;
+
+        current_ir_gui_state = VIEW_IR_CODE;
+        enableIrCodeDetails(false);
+        enableIrTable(true);
+        updateIrCodeButtons();
+        ESPUI.updateLabel(ir_code_state_label, "Changes cancelled!");
+      } break;
+
+
+		case GUI_CB_IR_CODE_LEARN_FLAG: {
+
+        if (current_ir_device_id < 0 || ir_code_learning_gui_active)
+          return;
+
+        if (current_ir_gui_state == VIEW_IR_CODE &&
+            irCodesStorage.findFreeIndex() == -1) {
+          ESPUI.updateLabel(
+            ir_code_state_label,
+            "IR codes storage is full - cannot learn new code!");
+          return;
+        }
+
+        ir_code_learning_gui_active = true;
+        enableIrTable(false);
+        updateIrCodeButtons();
+
+        ESPUI.updateLabel(
+          ir_code_state_label,
+          "Waiting for IR signal... Point remote at IR device and press a "
+          "button (or click CANCEL to abort).");
+
+        addGUICommand(gui_cmd_learn_ir_code, current_ir_device_id);
+      } break;
+
+
+			case GUI_CB_IR_CODE_SEND_FLAG: {
+				
+        if (current_ir_device_id < 0 || current_ir_code_id < 0) {
+          ESPUI.updateLabel(
+						ir_code_state_label, "Select a device and an IR code first!");
+          return;
+        }
+
+        ESPUI.updateLabel(ir_code_state_label, "Sending IR code to device...");
+        addGUICommand(gui_cmd_send_ir_code, current_ir_code_id);
+      } break;
+
+
+			case GUI_CB_IR_CODE_REMOVE_FLAG: {
+
+        if (current_ir_code_id < 0) {
+          ESPUI.updateLabel(
+						ir_code_state_label, "Select an IR code to delete first!");
+          return;
+        }
+
+				addGUICommand(gui_cmd_delete_ir_code, current_ir_code_id);
+        
+      } break;
+	}
+}
+
+/*****************************************************************************/
+
+void GUI_onIrCodeLearned() {
+
+	if (GUIstarted)
+		addGUICommand(gui_cmd_ir_code_learned);
+}
+
+/*****************************************************************************/
+
+/*****************************************************************************/
+
+void addPushoverMessagesTableJsonRow(
+  char *buffer, size_t max_size, size_t &offset, int16_t slot_id,
+  z2s_pushover_message_t &message, bool is_first) {
+
+  char preview_buf[68] = {};
+  size_t text_len = strlen(message.pushover_message_text);
+  size_t copy_len = (text_len > 60)
+                      ? mbstrnlen(message.pushover_message_text, 60)
+                      : text_len;
+
+  memcpy(preview_buf, message.pushover_message_text, copy_len);
+  preview_buf[copy_len] = '\0';
+  if (text_len > copy_len) {
+    strcat(preview_buf, "...");
+  }
+
+  appendToBuffer(
+    buffer, max_size, offset,
+    "%s[\"#%03d\",\"", is_first ? "" : ",", slot_id);
+  appendEscapedJsonString(
+    buffer, max_size, offset, message.pushover_message_name);
+  appendToBuffer(buffer, max_size, offset, "\",\"");
+  appendEscapedJsonString(buffer, max_size, offset, preview_buf);
+  appendToBuffer(buffer, max_size, offset, "\"]");
+}
+
+/*****************************************************************************/
+
+void buildPushoverMessagesTableJsonPayload(
+  uint16_t ui_label_id, int target_message_index) {
+
+  if (ui_label_id == 0xFFFF) return;
+
+  const size_t MAX_JSON_SIZE = 2048;
+  char json_payload[MAX_JSON_SIZE] = {};
+  const int BATCH_SIZE = 10;
+  size_t offset = 0;
+
+  int total_messages = Z2S_getPushoverMessagesNumber();
+
+  if (total_messages == 0) {
+    current_message_id = -1;
+    current_message_counter = -1;
+    snprintf(
+      json_payload, MAX_JSON_SIZE,
+      "{\"type\":\"update_action_table\",\"is_po\":true,\"target\":\"id%d\","
+      "\"s\":-1,\"append\":false,\"start_idx\":0,\"d\":[]}",
+      ui_label_id);
+    ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+    return;
+  }
+
+  int16_t next_slot = Z2S_findNextPushoverMessagePosition(0);
+  z2s_pushover_message_t message = {};
+
+  for (int i = 0; i < total_messages; i++) {
+    if (i % BATCH_SIZE == 0) {
+      offset = 0;
+      bool is_appending = (i > 0);
+      appendToBuffer(
+        json_payload, MAX_JSON_SIZE, offset,
+        "{\"type\":\"update_action_table\",\"is_po\":true,\"target\":\"id%d\","
+        "\"s\":%d,\"append\":%s,\"start_idx\":%d,\"d\":[",
+        ui_label_id, target_message_index, is_appending ? "true" : "false", i);
+    }
+
+    bool is_first_in_batch = (i % BATCH_SIZE == 0);
+    Z2S_loadPushoverMessage(next_slot, message);
+
+    addPushoverMessagesTableJsonRow(
+      json_payload, MAX_JSON_SIZE, offset, next_slot, message,
+      is_first_in_batch);
+
+    next_slot = Z2S_findNextPushoverMessagePosition(next_slot + 1);
+
+    if (((i + 1) % BATCH_SIZE == 0) || (i == total_messages - 1)) {
+      appendToBuffer(json_payload, MAX_JSON_SIZE, offset, "]}");
+      ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+    }
+  }
+}
+
+/*****************************************************************************/
+
+void sendPushoverMessageRowEdit(uint16_t ui_label_id, int target_row_index) {
+
+  if (ui_label_id == 0xFFFF) return;
+
+  char json_payload[512] = {};
+  size_t offset = 0;
+
+  appendToBuffer(
+    json_payload, sizeof(json_payload), offset,
+    "{\"type\":\"edit_action_row\",\"target\":\"id%d\",\"idx\":%d,\"d\":",
+    ui_label_id, target_row_index);
+
+  z2s_pushover_message_t message = {};
+  Z2S_loadPushoverMessage(current_message_id, message);
+
+  addPushoverMessagesTableJsonRow(
+    json_payload, sizeof(json_payload), offset, current_message_id, message,
+    true);
+
+  appendToBuffer(json_payload, sizeof(json_payload), offset, "}");
+  ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+}
+
+/*****************************************************************************/
+
+void enablePushoverTable(bool enable) {
+
+  if (pushover_messages_table_label == 0xFFFF) return;
+
+  char json_payload[256];
+  snprintf(
+    json_payload, sizeof(json_payload),
+    "{\"type\":\"EXEC_JS\",\"code\":\" setTableDisabled('id%u', %s); \"}",
+    pushover_messages_table_label, enable ? "false" : "true");
+  ESPUI.WebSocket()->textAll(json_payload, strlen(json_payload));
+}
+
+/*****************************************************************************/
+
+void enablePushoverMessageDetails(bool enable) {
+
+  if (!enable) {
+    working_str = empty_str;
+    ESPUI.updateText(pushover_message_name_text, working_str);
+    ESPUI.updateText(pushover_message_text_text, working_str);
+  }
+  enableControlStyle(pushover_message_details_label, enable);
+  enableControlStyle(pushover_message_name_text, enable);
+  enableControlStyle(pushover_message_text_text, enable);
+}
+
+/*****************************************************************************/
+
+void updatePushoverMessageButtons() {
+
+  bool has_selected_msg = (current_message_id >= 0);
+  bool is_viewing =
+    (current_pushover_message_gui_state == VIEW_PUSHOVER_MESSAGE);
+
+  enableControlStyle(pushover_message_new_button, is_viewing);
+  enableControlStyle(
+    pushover_message_edit_button, is_viewing && has_selected_msg);
+  enableControlStyle(
+    pushover_message_copy_button, is_viewing && has_selected_msg);
+  enableControlStyle(
+    pushover_message_remove_button, is_viewing && has_selected_msg);
+
+  enableControlStyle(pushover_message_save_button, !is_viewing);
+  enableControlStyle(pushover_message_cancel_button, !is_viewing);
+}
+
+/*****************************************************************************/
+
+void updatePushoverMessageDetails(
+  z2s_pushover_message_t &message, bool empty_message = false) {
+
+  if (current_pushover_message_gui_state == VIEW_PUSHOVER_MESSAGE) {
+    if (previous_pushover_message_gui_state != VIEW_PUSHOVER_MESSAGE)
+      enablePushoverMessageDetails(false);
+    return;
+  }
+
+  working_str = empty_message ? empty_str : message.pushover_message_name;
+  ESPUI.updateText(pushover_message_name_text, working_str);
+
+  working_str = empty_message ? empty_str : message.pushover_message_text;
+  ESPUI.updateText(pushover_message_text_text, working_str);
+}
+
+/*****************************************************************************/
+
+bool fillPushoverMessageDetails(z2s_pushover_message_t &message) {
+
+  const char *name_str =
+    ESPUI.getControl(pushover_message_name_text)->getValueCstr();
+  const char *text_str =
+    ESPUI.getControl(pushover_message_text_text)->getValueCstr();
+
+  if (!name_str || strlen(name_str) == 0 || !text_str || strlen(text_str) == 0)
+    return false;
+
+  size_t name_size = mbstrnlen(name_str, PUSHOVER_MESSAGE_NAME_MAX_SIZE - 1);
+  strncpy(message.pushover_message_name, name_str, name_size);
+  message.pushover_message_name[name_size] = '\0';
+
+  size_t text_size = mbstrnlen(text_str, PUSHOVER_MESSAGE_TEXT_MAX_SIZE - 1);
+  strncpy(message.pushover_message_text, text_str, text_size);
+  message.pushover_message_text[text_size] = '\0';
+
+  return true;
+}
+
+/*****************************************************************************/
+
+void buildPushoverTabGUI() {
+
+  int16_t first_message = Z2S_findNextPushoverMessagePosition(0);
+  if (first_message >= 0) {
+    current_message_id = first_message;
+    current_message_counter = Z2S_getPushoverMessageCounter(first_message);
+  }
+
+  auto pushover_tab = ESPUI.addControl(
+    Control::Type::Tab, empty_str, "Pushover",
+    Control::Color::Dark, Control::noParent);
+
+  // Panel 1: Pushover API Credentials
+  auto pushover_credentials_label = ESPUI.addControl(
+    Control::Type::Label, "Pushover credentials", empty_str,
+    Control::Color::Dark, pushover_tab);
+  ESPUI.setElementStyle(pushover_credentials_label, clearLabelStyle);
+
+  pushover_api_token_text = ESPUI.addControl(
+    Control::Type::Text, "Application API token (30 characters)", emptyString,
+    Control::Color::Dark, pushover_credentials_label, generalCallback);
+  ESPUI.getControl(pushover_api_token_text)->reserve(31);
+  ESPUI.setElementStyle(
+    pushover_api_token_text,
+    "width: calc(40% - 10px); min-width: 220px; margin: 0 5px 10px 5px;");
+
+  pushover_user_token_text = ESPUI.addControl(
+    Control::Type::Text, "User key (30 characters)", emptyString,
+    Control::Color::Dark, pushover_credentials_label, generalCallback);
+  ESPUI.getControl(pushover_user_token_text)->reserve(31);
+  ESPUI.setElementStyle(
+    pushover_user_token_text,
+    "width: calc(40% - 10px); min-width: 220px; margin: 0 5px 10px 5px;");
+
+  auto pushover_save_data_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "Save",
+    Control::Color::Dark, pushover_credentials_label, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_SAVE_DATA_FLAG);
+  ESPUI.setElementStyle(
+    pushover_save_data_button,
+    "width: calc(20% - 10px); min-width: 80px; margin: 0 5px 10px 5px;");
+
+  ESPUI.setPanelWide(pushover_credentials_label, true);
+
+  char token_buf[31] = {};
+  Z2S_GatewayPreferences.getString(
+    "PUSHOVER_API", token_buf, sizeof(token_buf));
+  working_str = token_buf;
+  ESPUI.updateText(pushover_api_token_text, working_str);
+
+  memset(token_buf, 0, sizeof(token_buf));
+  Z2S_GatewayPreferences.getString(
+    "PUSHOVER_USER", token_buf, sizeof(token_buf));
+  working_str = token_buf;
+  ESPUI.updateText(pushover_user_token_text, working_str);
+
+  // Panel 2: Pushover Messages Table
+  pushover_messages_table_label = ESPUI.addControl(
+    Control::Type::Label, "Pushover messages table", empty_str,
+    Control::Color::Dark, pushover_tab);
+  ESPUI.setPanelWide(pushover_messages_table_label, true);
+
+  // Panel 3: Pushover Management Buttons
+  pushover_message_new_button = ESPUI.addControl(
+    Control::Type::Button, "Pushover messages management", "NEW MESSAGE",
+    Control::Color::Dark, pushover_tab, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_MESSAGE_NEW_FLAG);
+
+  pushover_message_edit_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "EDIT MESSAGE",
+    Control::Color::Dark, pushover_message_new_button, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_MESSAGE_EDIT_FLAG);
+
+  pushover_message_copy_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "COPY MESSAGE",
+    Control::Color::Dark, pushover_message_new_button, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_MESSAGE_COPY_FLAG);
+
+  pushover_message_save_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "SAVE MESSAGE",
+    Control::Color::Dark, pushover_message_new_button, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_MESSAGE_SAVE_FLAG);
+
+  pushover_message_cancel_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "CANCEL CHANGES",
+    Control::Color::Dark, pushover_message_new_button, pushoverMessagesCallback,
+    (void *)GUI_CB_PUSHOVER_MESSAGE_CANCEL_FLAG);
+
+  pushover_message_remove_button = ESPUI.addControl(
+    Control::Type::Button, empty_str, "DELETE MESSAGE",
+    Control::Color::Alizarin, pushover_message_new_button,
+    pushoverMessagesCallback, (void *)GUI_CB_PUSHOVER_MESSAGE_REMOVE_FLAG);
+
+  pushover_message_state_label = ESPUI.addControl(
+    Control::Type::Label, empty_str, three_dots_str,
+    Control::Color::Dark, pushover_message_new_button);
+
+  ESPUI.setPanelWide(pushover_message_new_button, true);
+
+  // Panel 4: Pushover Message Details Editor
+  pushover_message_details_label = ESPUI.addControl(
+    Control::Type::Label, "Pushover message details", empty_str,
+    Control::Color::Dark, pushover_tab);
+  ESPUI.setElementStyle(pushover_message_details_label, clearLabelStyle);
+
+  pushover_message_name_text = ESPUI.addControl(
+    Control::Type::Text, "Message name (max 32 characters)", emptyString,
+    Control::Color::Dark, pushover_message_details_label, generalCallback);
+  ESPUI.getControl(pushover_message_name_text)->reserve(
+    PUSHOVER_MESSAGE_NAME_MAX_SIZE);
+  ESPUI.setElementStyle(
+    pushover_message_name_text,
+    "width: calc(30% - 10px); min-width: 200px; margin: 0 5px 10px 5px;");
+
+  pushover_message_text_text = ESPUI.addControl(
+    Control::Type::Text, "Message text (max 1023 characters)", emptyString,
+    Control::Color::Dark, pushover_message_details_label, generalCallback);
+  ESPUI.getControl(pushover_message_text_text)->reserve(
+    PUSHOVER_MESSAGE_TEXT_MAX_SIZE);
+
+  BasicControl *po_textarea = ESPUI.getControl(pushover_message_text_text);
+  po_textarea->control_flags |= CONTROL_FLAG_TEXTAREA;
+  po_textarea->rows = 4;
+  po_textarea->cols = 64;
+
+  ESPUI.setElementStyle(
+    pushover_message_text_text,
+    "resize: none; width: calc(70% - 10px); min-width: 260px; "
+    "margin: 0 5px 10px 5px;");
+
+  ESPUI.setPanelWide(pushover_message_details_label, true);
+
+  enablePushoverMessageDetails(false);
+  updatePushoverMessageButtons();
+}
+
+/*****************************************************************************/
+
+void pushoverMessagesCallback(BasicControl *sender, int type, void *param) {
+
+  if (type == B_UP) {
+    addGUICommand(gui_cmd_pushover_message_callback, (int32_t)param);
+  }
+}
+
+/*****************************************************************************/
+
+void pushoverMessagesCallbackMain(int32_t flag) {
+
+  z2s_pushover_message_t new_message = {};
+
+  switch ((uint32_t)flag) {
+
+
+    case GUI_CB_PUSHOVER_SAVE_DATA_FLAG: {
+
+      Z2S_GatewayPreferences.putString(
+        "PUSHOVER_API",
+        ESPUI.getControl(pushover_api_token_text)->getValueCstr());
+      Z2S_GatewayPreferences.putString(
+        "PUSHOVER_USER",
+        ESPUI.getControl(pushover_user_token_text)->getValueCstr());
+
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        "Pushover API token and User key saved!");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_NEW_FLAG: {
+
+      if (current_pushover_message_gui_state != VIEW_PUSHOVER_MESSAGE)
+        return;
+
+      new_message_id = Z2S_findFreePushoverMessageIndex();
+      if (new_message_id == -1) {
+        ESPUI.updateLabel(
+          pushover_message_state_label,
+          "Pushover messages table is full - can't add new message!");
+        return;
+      }
+
+      previous_pushover_message_gui_state = current_pushover_message_gui_state;
+      current_pushover_message_gui_state = NEW_PUSHOVER_MESSAGE;
+      enablePushoverMessageDetails(true);
+      updatePushoverMessageDetails(new_message, true);
+      updatePushoverMessageButtons();
+      enablePushoverTable(false);
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        "Enter message name and text, then click SAVE MESSAGE.");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_EDIT_FLAG: {
+
+      if ((current_pushover_message_gui_state != VIEW_PUSHOVER_MESSAGE) ||
+          (current_message_id == -1))
+        return;
+
+      previous_pushover_message_gui_state = current_pushover_message_gui_state;
+      current_pushover_message_gui_state = EDIT_PUSHOVER_MESSAGE;
+      Z2S_loadPushoverMessage(current_message_id, new_message);
+      enablePushoverMessageDetails(true);
+      updatePushoverMessageDetails(new_message, false);
+      updatePushoverMessageButtons();
+      enablePushoverTable(false);
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        "Edit message details and click SAVE MESSAGE.");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_COPY_FLAG: {
+
+      if ((current_pushover_message_gui_state != VIEW_PUSHOVER_MESSAGE) ||
+          (current_message_id == -1))
+        return;
+
+      new_message_id = Z2S_findFreePushoverMessageIndex();
+      if (new_message_id == -1) {
+        ESPUI.updateLabel(
+          pushover_message_state_label,
+          "Pushover messages table is full - can't copy message!");
+        return;
+      }
+
+      previous_pushover_message_gui_state = current_pushover_message_gui_state;
+      current_pushover_message_gui_state = COPY_PUSHOVER_MESSAGE;
+      Z2S_loadPushoverMessage(current_message_id, new_message);
+      enablePushoverMessageDetails(true);
+      updatePushoverMessageDetails(new_message, false);
+      updatePushoverMessageButtons();
+      enablePushoverTable(false);
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        "Modify copied message and click SAVE MESSAGE.");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_SAVE_FLAG: {
+
+      if ((current_pushover_message_gui_state != NEW_PUSHOVER_MESSAGE) &&
+          (current_pushover_message_gui_state != EDIT_PUSHOVER_MESSAGE) &&
+          (current_pushover_message_gui_state != COPY_PUSHOVER_MESSAGE))
+        return;
+
+      if (!fillPushoverMessageDetails(new_message)) {
+        ESPUI.updateLabel(
+          pushover_message_state_label,
+          "Required message name or text is missing!");
+        return;
+      }
+
+      bool is_edit =
+        (current_pushover_message_gui_state == EDIT_PUSHOVER_MESSAGE);
+
+      if (!is_edit) {
+        current_message_id = new_message_id;
+      }
+
+      new_message.pushover_message_subaction_id = current_message_id;
+
+      bool save_result =
+        Z2S_savePushoverMessage(current_message_id, new_message);
+      current_message_counter =
+        Z2S_getPushoverMessageCounter(current_message_id);
+
+      previous_pushover_message_gui_state = SAVE_PUSHOVER_MESSAGE;
+      current_pushover_message_gui_state = VIEW_PUSHOVER_MESSAGE;
+
+      enablePushoverMessageDetails(false);
+      updatePushoverMessageButtons();
+
+      if (is_edit) {
+        sendPushoverMessageRowEdit(
+          pushover_messages_table_label, current_message_counter - 1);
+      } else {
+        buildPushoverMessagesTableJsonPayload(
+          pushover_messages_table_label, current_message_counter - 1);
+      }
+      enablePushoverTable(true);
+
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        save_result ? "Saving Pushover message: SUCCESS!"
+                    : "Saving Pushover message: FAILED!");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_CANCEL_FLAG: {
+
+      if ((current_pushover_message_gui_state != NEW_PUSHOVER_MESSAGE) &&
+          (current_pushover_message_gui_state != EDIT_PUSHOVER_MESSAGE) &&
+          (current_pushover_message_gui_state != COPY_PUSHOVER_MESSAGE))
+        return;
+
+      previous_pushover_message_gui_state = CANCEL_PUSHOVER_MESSAGE;
+      current_pushover_message_gui_state = VIEW_PUSHOVER_MESSAGE;
+      enablePushoverMessageDetails(false);
+      updatePushoverMessageButtons();
+      enablePushoverTable(true);
+      ESPUI.updateLabel(pushover_message_state_label, "Changes cancelled!");
+    } break;
+
+
+    case GUI_CB_PUSHOVER_MESSAGE_REMOVE_FLAG: {
+
+      if ((current_pushover_message_gui_state != VIEW_PUSHOVER_MESSAGE) ||
+          (current_message_id == -1))
+        return;
+
+      previous_pushover_message_gui_state = REMOVE_PUSHOVER_MESSAGE;
+      bool remove_result = Z2S_removePushoverMessage(current_message_id);
+
+      int16_t next_msg = Z2S_findNextPushoverMessagePosition(0);
+      if (next_msg >= 0) {
+        current_message_id = next_msg;
+        current_message_counter = Z2S_getPushoverMessageCounter(next_msg);
+      } else {
+        current_message_id = -1;
+        current_message_counter = -1;
+      }
+
+      current_pushover_message_gui_state = VIEW_PUSHOVER_MESSAGE;
+      enablePushoverMessageDetails(false);
+      updatePushoverMessageButtons();
+
+      buildPushoverMessagesTableJsonPayload(
+        pushover_messages_table_label,
+        (current_message_counter > 0) ? (current_message_counter - 1) : 0);
+      enablePushoverTable(true);
+
+      ESPUI.updateLabel(
+        pushover_message_state_label,
+        remove_result ? "Removing Pushover message: SUCCESS!"
+                      : "Removing Pushover message: FAILED!");
+    } break;
+  }
+}
+
+/*****************************************************************************/
+
 #endif  //USE_SUPLA_WEB_SERVER
-  

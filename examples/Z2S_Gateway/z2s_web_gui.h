@@ -55,6 +55,7 @@ typedef enum gui_modes {
 enum gui_commands {
 
   gui_cmd_none,
+  gui_cmd_synchronize_all,
   gui_cmd_check_github_ota,
   gui_cmd_perform_github_ota,
   gui_cmd_sort_channels_selectors,
@@ -90,7 +91,17 @@ enum gui_commands {
   gui_cmd_remove_local_channel,
   gui_cmd_edit_channel_data,
   gui_cmd_update_channel_info,
-  gui_cmd_update_zbdevice_info
+  gui_cmd_update_zbdevice_info,
+  gui_cmd_ir_device_callback,
+	gui_cmd_build_ir_codes_table,
+	gui_cmd_edit_ir_codes_table,
+	gui_cmd_learn_ir_code,
+	gui_cmd_send_ir_code,
+	gui_cmd_ir_code_learned,
+  gui_cmd_delete_ir_code,
+  gui_cmd_pushover_message_callback,
+	gui_cmd_build_pushover_messages_table,
+	gui_cmd_edit_pushover_messages_table
 };
 
 class Z2S_Core;
@@ -120,6 +131,8 @@ void GUI_onLastBindingFailure(bool binding_failed);
 void GUI_onTuyaCustomClusterReceive(
   uint8_t command_id, uint16_t payload_size, uint8_t * payload_data);
 
+void GUI_onIrCodeLearned();
+
 void GUI_onZigbeeOpenNetwork(bool is_network_open);
 
 void sortZbDevicesSelectors(int32_t selected_value = -1);
@@ -131,4 +144,4 @@ void sortZbDevicesAndChannelsSelectors();
 uint16_t Z2S_getGUIBuildControlFlags(gui_modes_t mode);
 
 
-#endif // Z2S_WEB_GUI_H_
+#endif // Z2S_WEB_GUI_H_�

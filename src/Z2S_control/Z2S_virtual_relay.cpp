@@ -56,7 +56,7 @@ void Supla::Control::Z2S_VirtualRelay::onInit() {
   if (getTimeoutMs())
     channel.setStateOffline();
   
-  initDone = true;
+  runtimeFlags.initDone = true;
 }
 
 /*****************************************************************************/
@@ -67,23 +67,7 @@ void Supla::Control::Z2S_VirtualRelay::turnOn(_supla_int_t duration) {
     "Relay[%d] turn ON (duration %d ms)", channel.getChannelNumber(), 
     duration);
 
-  durationMs = duration;
-  
-  if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
-    storedTurnOnDurationMs = durationMs;
-  }
-
-  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
-    durationMs = storedTurnOnDurationMs;
-  }
-
-  if (durationMs != 0) {
-
-    durationTimestamp = millis();
-  } else {
-
-    durationTimestamp = 0;
-  }
+  applyDuration(duration, true);
 
   if (Zigbee.started()) { 
     
@@ -402,15 +386,7 @@ void Supla::Control::Z2S_VirtualRelay::turnOff(_supla_int_t duration) {
       channel.getChannelNumber(),
       duration);
   
-  durationMs = duration;
-  
-  if (durationMs != 0) {
-    
-    durationTimestamp = millis();
-  } else {
-    
-    durationTimestamp = 0;
-  }
+  applyDuration(duration, false);
 
   if (Zigbee.started()) { 
     
@@ -632,10 +608,6 @@ void Supla::Control::Z2S_VirtualRelay::ping() {
   if (Zigbee.started()) {
 
     _fresh_start = false;
-    
-    zbGateway.sendAttributeRead(
-      _short_addr, _endpoint, ESP_ZB_ZCL_CLUSTER_ID_ON_OFF, 
-      ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID, false);
 
 	switch (_z2s_function) {
 
@@ -648,6 +620,18 @@ void Supla::Control::Z2S_VirtualRelay::ping() {
         sendTuyaQueryCmd(_short_addr, _endpoint, false);
         
       } break;
+
+      case Z2S_VIRTUAL_RELAY_FNC_IR_REMOTE_CONTROL:
+
+      break;
+
+
+      default:
+
+        zbGateway.sendAttributeRead(
+          _short_addr, _endpoint, ESP_ZB_ZCL_CLUSTER_ID_ON_OFF, 
+          ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID, false);
+      break;
 	}
   }
 }
@@ -746,21 +730,97 @@ void Supla::Control::Z2S_VirtualRelay::handleAction(int event, int action) {
     break;
   }
 
-  if (_z2s_function == Z2S_VIRTUAL_RELAY_FNC_MOES_ALARM_MELODY) {
+  switch (_z2s_function) {
 
-      if ((action >= Z2S_SUPLA_ACTION_PLAY_MELODY) && 
+
+    case Z2S_VIRTUAL_RELAY_FNC_MOES_ALARM_MELODY: {
+
+      if ((action >= Z2S_SUPLA_ACTION_PLAY_MELODY_FIRST_ACTION) && 
           (action <= Z2S_SUPLA_ACTION_PLAY_MELODY_LAST_ACTION)) {
 
-      uint8_t melody_id = action - Z2S_SUPLA_ACTION_PLAY_MELODY + 1;
+        uint8_t melody_id = action - 
+          Z2S_SUPLA_ACTION_PLAY_MELODY_FIRST_ACTION + 1;
 
-      if ((melody_id >= MOES_ALARM_MELODY_FIRST_MELODY) &&
-          (melody_id <= MOES_ALARM_MELODY_LAST_MELODY)) {
+        if ((melody_id >= MOES_ALARM_MELODY_FIRST_MELODY) &&
+            (melody_id <= MOES_ALARM_MELODY_LAST_MELODY)) {
 
-        //_z2s_function_value_U8 = melody_id;
-        sendTuyaRequestCmdEnum8(
-          _short_addr, _endpoint, MOES_ALARM_MELODY_DP, melody_id);
+          //_z2s_function_value_U8 = melody_id;
+          sendTuyaRequestCmdEnum8(
+            _short_addr, _endpoint, MOES_ALARM_MELODY_DP, melody_id);
+        }
       }
-    }
+    } break;
+
+
+    case Z2S_VIRTUAL_RELAY_FNC_MOES_ALARM_VOLUME: {
+
+      if ((action >= Z2S_SUPLA_ACTION_SET_VOLUME_FIRST_ACTION) && 
+          (action <= Z2S_SUPLA_ACTION_SET_VOLUME_LAST_ACTION)) {
+
+        uint8_t volume = action - 
+          Z2S_SUPLA_ACTION_SET_VOLUME_FIRST_ACTION;
+
+        if ((volume >= MOES_ALARM_VOLUME_LOWEST) &&
+            (volume <= MOES_ALARM_VOLUME_HIGHEST)) {
+
+          //_z2s_function_value_U8 = melody_id;
+          sendTuyaRequestCmdEnum8(
+            _short_addr, _endpoint, MOES_ALARM_VOLUME_DP, volume);
+        }
+      }
+    } break;
+
+
+    case Z2S_VIRTUAL_RELAY_FNC_MOES_ALARM_DURATION: {
+
+      if ((action >= Z2S_SUPLA_ACTION_SET_DURATION_FIRST_ACTION) && 
+          (action <= Z2S_SUPLA_ACTION_SET_DURATION_LAST_ACTION)) {
+
+        static const uint16_t DURATION_INTERVALS[9] = 
+          {1, 2, 3, 5, 10, 30, 60, 180, 300};
+
+        uint32_t duration = action - 
+          Z2S_SUPLA_ACTION_SET_DURATION_FIRST_ACTION;
+
+        duration = (duration <= 8) ? DURATION_INTERVALS[duration] : 
+          (duration * 30 + 60);
+
+        if ((duration >= MOES_ALARM_MELODY_MIN_DURATION) &&
+            (duration <= MOES_ALARM_MELODY_MAX_DURATION)) {
+
+          //_z2s_function_value_U8 = melody_id;
+          sendTuyaRequestCmdValue32(
+            _short_addr, _endpoint, MOES_ALARM_DURATION_DP, duration);
+        }
+      }
+    } break;
+
+
+    case Z2S_VIRTUAL_RELAY_FNC_IR_REMOTE_CONTROL: {
+
+      if (!Zigbee.started()) 
+        break;
+
+      if ((action >= Z2S_SUPLA_ACTION_SEND_IR_CODE_FIRST_ACTION) && 
+          (action <= Z2S_SUPLA_ACTION_SEND_IR_CODE_LAST_ACTION)) {
+
+        uint8_t ir_code_id = action - 
+          Z2S_SUPLA_ACTION_SEND_IR_CODE_FIRST_ACTION;
+
+        z2s_ir_code_t ir_code = {};
+
+        if (irCodesStorage.load(ir_code_id, ir_code)) {
+          log_i(
+            "Sending IR code #%03u (%s) to 0x%04X", 
+            ir_code_id, ir_code.ir_code_name, _short_addr);
+          sendLearnedIRCode(_short_addr, _endpoint, ir_code.ir_code_base64);
+        } else {
+          log_e("IR code #%03u not found in storage!", ir_code_id);
+        }
+      }
+    } break;
+
+
   }
 }
 
@@ -784,31 +844,17 @@ void Supla::Control::Z2S_VirtualRelay::Z2S_setOnOff(bool on_off_state) {
   log_i("durationMs = %lu, storedTurnOnDurationMs = %lu, "
         "durationTimestamp = %lu, keepTurnOnDurationMs = %u",
         durationMs, storedTurnOnDurationMs, durationTimestamp, 
-        keepTurnOnDurationMs);
+        runtimeFlags.keepTurnOnDurationMs);
 
   if (state != on_off_state) {
 
     if (on_off_state) {
       
-      if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
-       storedTurnOnDurationMs = durationMs;
-      }
-
-      if (keepTurnOnDurationMs || isStaircaseFunction() || 
-          isImpulseFunction()) {
-        durationMs = storedTurnOnDurationMs;
-      }
-      if (durationMs != 0) {
-
-        durationTimestamp = millis();
-      } else {
-
-        durationTimestamp = 0;
-      }
-    } else {
+      applyDuration(durationMs, true);
+    } 
+    else {
       
-      durationMs = 0;
-      durationTimestamp = 0;
+      applyDuration(0, false);
     }
   }
   

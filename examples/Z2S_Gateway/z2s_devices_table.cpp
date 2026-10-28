@@ -897,6 +897,18 @@ void Z2S_initZbDevices(uint32_t init_ms) {
         continue;
       }
 
+      if (z2s_device_params.user_data_flags & 
+          ZBD_USER_DATA_FLAG_FULL_UPDATE_REQUIRED) {
+
+        log_e(
+          "join artefact found - clearing index position at %u", 
+          devices_counter);
+        
+        devicesStorage.clearPosition(devices_counter);
+        devicesStorage.saveIndexTable();
+        continue;
+      }
+
       Z2S_Device *z2s_device = new Z2S_Device();
       z2s_device->setZ2SDevice(devices_counter, &z2s_device_params);
 
@@ -1953,6 +1965,15 @@ int16_t Z2S_getPushoverMessageCounter(uint16_t message_position) {
 
   return Z2S_getIndexTablePositionCounter(
     z2s_pushover_messages_index_table, message_position, 
+    Z2S_PUSHOVER_MESSAGES_MAX_NUMBER);
+}
+
+/*****************************************************************************/
+
+int16_t Z2S_getPushoverMessagePosition(uint16_t message_counter) {
+
+  return Z2S_getIndexTableCounterPosition(
+    z2s_pushover_messages_index_table, message_counter, 
     Z2S_PUSHOVER_MESSAGES_MAX_NUMBER);
 }
 
@@ -6474,6 +6495,8 @@ void Z2S_onCmdCustomClusterReceive(
   uint16_t payload_size, uint8_t *payload) {
 
   switch (cluster) {
+    
+    
     case TUYA_PRIVATE_CLUSTER_EF00: {
 
       processTuyaCustomCluster(
@@ -6483,11 +6506,14 @@ void Z2S_onCmdCustomClusterReceive(
         _on_Tuya_custom_cluster_receive(command_id, payload_size, payload);
     } break;
 
+    
     case ZOSUNG_IR_TRANSMIT_CUSTOM_CLUSTER:
       
       processZosungCustomCluster(
-        ieee_addr, endpoint, command_id, payload_size, payload); break;
+        tsn, short_addr, endpoint, command_id, payload_size, payload); 
+    break;
     
+
     case IKEA_PRIVATE_CLUSTER:
     case IKEA_PRIVATE_CLUSTER_2: {
       
@@ -6499,6 +6525,7 @@ void Z2S_onCmdCustomClusterReceive(
         short_addr, endpoint, cluster, command_id, payload_size, payload);
      } break;
 
+
      case PHILIPS_CUSTOM_CLUSTER: {
       
       log_i(
@@ -6508,6 +6535,7 @@ void Z2S_onCmdCustomClusterReceive(
       processPhilipsCommands(
         short_addr, endpoint, cluster, command_id, payload_size, payload);
      } break;
+
     
     default: 
       
@@ -7001,6 +7029,7 @@ uint8_t Z2S_addZ2SDevice(
       case Z2S_DEVICE_DESC_TUYA_RELAY:
       case Z2S_DEVICE_DESC_TUYA_DP_RELAY:
       case Z2S_DEVICE_DESC_TUYA_FINGERBOT_PLUS:
+      case Z2S_DEVICE_DESC_EGLO_CONNECT2_REMOTE:
 
         addZ2SDeviceVirtualRelay(
           &zbGateway,device, first_free_slot, NO_CUSTOM_CMD_SID, 
@@ -7475,6 +7504,7 @@ uint8_t Z2S_addZ2SDevice(
       case Z2S_DEVICE_DESC_TUYA_HVAC_LEGACY:
       case Z2S_DEVICE_DESC_TS0601_TRV_SASWELL:
       case Z2S_DEVICE_DESC_TS0601_TRV_ME167:
+      case Z2S_DEVICE_DESC_TS0601_TRV_ME168:
       case Z2S_DEVICE_DESC_TS0601_TRV_BECA:
       case Z2S_DEVICE_DESC_TS0601_TRV_MOES:
       case Z2S_DEVICE_DESC_TS0601_TRV_TRV601:
@@ -7681,8 +7711,7 @@ case Z2S_DEVICE_DESC_LUMI_W500: {
       case Z2S_DEVICE_DESC_IKEA_RGBW_BULB:
       case Z2S_DEVICE_DESC_ADEO_RGBW_BULB:
       case Z2S_DEVICE_DESC_RGBW_BULB_XY:
-      case Z2S_DEVICE_DESC_PHILIPS_RGBW_BULB:
-      case Z2S_DEVICE_DESC_TUYA_RGBWCT_LED_EF00: {
+      case Z2S_DEVICE_DESC_PHILIPS_RGBW_BULB: {
         
         addZ2SDeviceVirtualRelay(
           &zbGateway, device, first_free_slot, NO_CUSTOM_CMD_SID, 
@@ -7734,7 +7763,8 @@ case Z2S_DEVICE_DESC_LUMI_W500: {
       case Z2S_DEVICE_DESC_IKEA_RGBCCT_BULB:
       case Z2S_DEVICE_DESC_RGBCCT_LIGHT_SOURCE:
       case Z2S_DEVICE_DESC_RGBCCT_LIGHT_SOURCE_XY:
-      case Z2S_DEVICE_DESC_LUMI_RGBCCT_LIGHT_SOURCE: {
+      case Z2S_DEVICE_DESC_LUMI_RGBCCT_LIGHT_SOURCE:
+      case Z2S_DEVICE_DESC_TUYA_RGBWCT_LED_EF00: {
         
         addZ2SDeviceRGBCCT(
           device, first_free_slot, "RGBCCT", 
@@ -8642,9 +8672,12 @@ case Z2S_DEVICE_DESC_LUMI_W500: {
 /******************************************************************************/     
      
       case Z2S_DEVICE_DESC_IR_REMOTE_CONTROL:
+      case Z2S_DEVICE_DESC_DP_IR_REMOTE_CONTROL:
+      case Z2S_DEVICE_DESC_MOES_IR_REMOTE_CONTROL:
 
         addZ2SDeviceVirtualRelay(
-          &zbGateway, device, first_free_slot, NO_CUSTOM_CMD_SID, "IR REMOTE", 0); 
+          &zbGateway, device, first_free_slot, NO_CUSTOM_CMD_SID, "IR REMOTE", 
+          0); 
       break;
 
 /******************************************************************************/     
@@ -9539,6 +9572,7 @@ bool hasTuyaCustomCluster(uint32_t model_id) {
     case Z2S_DEVICE_DESC_TUYA_DIMMER_DOUBLE_SWITCH:
     case Z2S_DEVICE_DESC_TS0601_TRV_SASWELL:
     case Z2S_DEVICE_DESC_TS0601_TRV_ME167:
+    case Z2S_DEVICE_DESC_TS0601_TRV_ME168:
     case Z2S_DEVICE_DESC_TS0601_TRV_BECA:
     case Z2S_DEVICE_DESC_TS0601_TRV_MOES:
     case Z2S_DEVICE_DESC_TS0601_TRV_TRV601:
@@ -9585,6 +9619,7 @@ bool hasTuyaCustomCluster(uint32_t model_id) {
     case Z2S_DEVICE_DESC_TUYA_SMART_POOL_SENSOR:
     case Z2S_DEVICE_DESC_TUYA_WATER_QUALITY_MONITOR:
     case Z2S_DEVICE_DESC_TS0601_TRV_GTVZB:
+    case Z2S_DEVICE_DESC_DP_IR_REMOTE_CONTROL:
       return true;
     default:
       return false;

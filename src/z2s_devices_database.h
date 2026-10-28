@@ -362,6 +362,8 @@
 #define Z2S_DEVICE_DESC_LUMI_SMART_BUTTON_5F_WXKG12LM       0x5612
 #define Z2S_DEVICE_DESC_LUMI_SMART_BUTTON_6F_WXKG11LM       0x5613
 
+#define Z2S_DEVICE_DESC_EGLO_CONNECT2_REMOTE                0x5700
+
 #define Z2S_DEVICE_DESC_HVAC_START                          0x6000
 
 #define Z2S_DEVICE_DESC_TUYA_HVAC                           0x6000
@@ -391,6 +393,7 @@
 #define Z2S_DEVICE_DESC_TS0601_TRV_TRV602Z                  0x6017
 #define Z2S_DEVICE_DESC_TS0601_TRV_TV02                     0x6018
 #define Z2S_DEVICE_DESC_TS0601_TRV_SITERWELL                0x6019
+#define Z2S_DEVICE_DESC_TS0601_TRV_ME168                    0x601A
 #define Z2S_DEVICE_DESC_TS0601_TRV_TRV16                    0x6020
 #define Z2S_DEVICE_DESC_TS0601_TRV_GTVZB                    0x6021
 
@@ -407,6 +410,9 @@
 #define Z2S_DEVICE_DESC_HVAC_END                            0x6499
 
 #define Z2S_DEVICE_DESC_IR_REMOTE_CONTROL                   0x6500
+#define Z2S_DEVICE_DESC_MOES_IR_REMOTE_CONTROL              0x6505
+#define Z2S_DEVICE_DESC_DP_IR_REMOTE_CONTROL                0x6510
+
 #define Z2S_DEVICE_DESC_TUYA_SIREN_ALARM                    0x6600
 #define Z2S_DEVICE_DESC_MOES_ALARM                          0x6610
 
@@ -972,6 +978,7 @@ constexpr uint32_t hash_32_fnv1a_const2(const char* str_1, const char* str_2, ui
 #define Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_BASIC               0x0100
 
 #define Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_XIAOMI              0x0110
+#define Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF        0x0115
 
 #define Z2S_REPORTING_SET_DESC_VOLTAGE_REPORTING_STANDARD               0x0200
 #define Z2S_REPORTING_SET_DESC_BATTERY_PERCENTAGE_REPORTING_STANDARD    0x0201
@@ -989,7 +996,9 @@ constexpr uint32_t hash_32_fnv1a_const2(const char* str_1, const char* str_2, ui
 
 #define Z2S_REPORTING_SET_DESC_SLACKY_DIY_REPEATER                      0x0700
 
+
 inline const z2s_reporting_set_desc_t Z2S_REPORTING_SETS_DESC[] PROGMEM [[maybe_unused]] = {
+
 
   { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_BASIC,
     .z2s_cluster_id = ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,
@@ -1025,6 +1034,42 @@ inline const z2s_reporting_set_desc_t Z2S_REPORTING_SETS_DESC[] PROGMEM [[maybe_
     .z2s_min_interval_value = 3600, 
     .z2s_max_interval_value = 65000,
     .z2s_delta_value_8 = 0,
+    .z2s_manufacturer_code = 0},
+
+  { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF,
+    .z2s_cluster_id = ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,
+    .z2s_attribute_id = ESP_ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID,
+    .z2s_attribute_type = ESP_ZB_ZCL_ATTR_TYPE_S16,
+    .z2s_min_interval_value = 30, 
+    .z2s_max_interval_value = 3600,
+    .z2s_delta_value = 20,
+    .z2s_manufacturer_code = 0},
+
+  { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF,
+    .z2s_cluster_id = ESP_ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+    .z2s_attribute_id = ESP_ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
+    .z2s_attribute_type = ESP_ZB_ZCL_ATTR_TYPE_U16,
+    .z2s_min_interval_value = 30, 
+    .z2s_max_interval_value = 3600,
+    .z2s_delta_value = 100,
+    .z2s_manufacturer_code = 0},
+
+  { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF,
+    .z2s_cluster_id = ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+    .z2s_attribute_id = ESP_ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+    .z2s_attribute_type = ESP_ZB_ZCL_ATTR_TYPE_U8,
+    .z2s_min_interval_value = 3600, 
+    .z2s_max_interval_value = 65000,
+    .z2s_delta_value_8 = 0,
+    .z2s_manufacturer_code = 0},
+
+  { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF,
+    .z2s_cluster_id = ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+    .z2s_attribute_id = ESP_ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
+    .z2s_attribute_type = ESP_ZB_ZCL_ATTR_TYPE_U8,
+    .z2s_min_interval_value = 3600, 
+    .z2s_max_interval_value = 65000,
+    .z2s_delta_value_8 = 1,
     .z2s_manufacturer_code = 0},
 
   { .z2s_reporting_set_id = Z2S_REPORTING_SET_DESC_BATTERY_PERCENTAGE_REPORTING_STANDARD,
@@ -1877,6 +1922,10 @@ inline const z2s_device_desc_t Z2S_DEVICES_DESC[] PROGMEM [[maybe_unused]] = {
       ESP_ZB_ZCL_CLUSTER_ID_ON_OFF,
       ESP_ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL }},
 
+  {	.z2s_device_desc_id = Z2S_DEVICE_DESC_EGLO_CONNECT2_REMOTE,
+    .z2s_device_clusters_count = 0,
+    .z2s_device_config_flags = 0x0 },
+
   {	.z2s_device_desc_id = Z2S_DEVICE_DESC_IKEA_SYMFONISK_GEN_1,
     .z2s_device_clusters_count = 4,
     .z2s_device_config_flags = 0x0,
@@ -2081,6 +2130,11 @@ inline const z2s_device_desc_t Z2S_DEVICES_DESC[] PROGMEM [[maybe_unused]] = {
     .z2s_device_config_flags = Z2S_DEVICE_DESC_CONFIG_FLAG_TUYA_INIT,
     .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
                              ESP_ZB_ZCL_CLUSTER_ID_BASIC }},
+
+  {	.z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME168,
+    .z2s_device_clusters_count = 1,
+    .z2s_device_config_flags = Z2S_DEVICE_DESC_CONFIG_FLAG_TUYA_INIT,
+    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_BASIC }},
 
   {	.z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_BECA,
     .z2s_device_clusters_count = 2,
@@ -2875,10 +2929,19 @@ inline const z2s_device_desc_t Z2S_DEVICES_DESC[] PROGMEM [[maybe_unused]] = {
     .z2s_device_clusters = { TUYA_PRIVATE_CLUSTER_EF00 }},
 
   {	.z2s_device_desc_id = Z2S_DEVICE_DESC_IR_REMOTE_CONTROL,
-    .z2s_device_clusters_count = 2,
-    .z2s_device_config_flags = Z2S_DEVICE_DESC_CONFIG_FLAG_TUYA_INIT,
-    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-                             ZOSUNG_IR_CONTROL_CUSTOM_CLUSTER }},
+    .z2s_device_clusters_count = 1,
+    .z2s_device_config_flags = 0,
+    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_BASIC }},
+
+  {	.z2s_device_desc_id = Z2S_DEVICE_DESC_DP_IR_REMOTE_CONTROL,
+    .z2s_device_clusters_count = 1,
+    .z2s_device_config_flags = 0,
+    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_BASIC }},
+
+  {	.z2s_device_desc_id = Z2S_DEVICE_DESC_MOES_IR_REMOTE_CONTROL,
+    .z2s_device_clusters_count = 1,
+    .z2s_device_config_flags = 0,
+    .z2s_device_clusters = { ESP_ZB_ZCL_CLUSTER_ID_POWER_CONFIG }},
 
   {	.z2s_device_desc_id = Z2S_DEVICE_DESC_SONOFF_SMART_VALVE,
     .z2s_device_clusters_count = 3,
@@ -3363,12 +3426,18 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
   {	.manufacturer_name = "Zbeacon", .model_name = "TH01",
     .z2s_device_uid = 1800,
 	.z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TEMPHUMIDITY_SENSOR,
-	.z2s_device_endpoints_count = 1},
+	.z2s_device_endpoints = { 
+      0x01, Z2S_REPORTING_SET_FLAG_STANDARD, 
+      Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF, 
+      Z2S_DEVICE_DESC_TUYA_TEMPHUMIDITY_SENSOR }},
 
   {	.manufacturer_name = "eWeLink", .model_name = "SNZB-02",
     .z2s_device_uid = 1900,
 	.z2s_device_desc_id = Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR,
-	.z2s_device_endpoints_count = 1},
+	.z2s_device_endpoints = { 
+      0x01, Z2S_REPORTING_SET_FLAG_STANDARD, 
+      Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF, 
+      Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR }},
 
   {	.manufacturer_name = "TELINK", .model_name = "TLSR82xx",
     .z2s_device_uid = 1905,
@@ -3378,7 +3447,10 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
   {	.manufacturer_name = "eWeLink", .model_name = "CK-TLSR8656-SS5-01(7014)",
     .z2s_device_uid = 1910,
 	.z2s_device_desc_id = Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR,
-	.z2s_device_endpoints_count = 1},
+	.z2s_device_endpoints = { 
+      0x01, Z2S_REPORTING_SET_FLAG_STANDARD, 
+      Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF, 
+      Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR }},
 
   {	.manufacturer_name = "SONOFF", .model_name = "SNZB-02D",
     .z2s_device_uid = 2000,
@@ -3460,7 +3532,10 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
   {	.manufacturer_name = "eWeLink", .model_name = "TH01",
     .z2s_device_uid = 2800,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR,
-	  .z2s_device_endpoints_count = 1},
+	  .z2s_device_endpoints = { 
+      0x01, Z2S_REPORTING_SET_FLAG_STANDARD, 
+      Z2S_REPORTING_SET_DESC_TEMPERATURE_HUMIDITY_POWER_SONOFF, 
+      Z2S_DEVICE_DESC_TEMPHUMIDITY_SENSOR }},
 
   {	.manufacturer_name = "LUMI", .model_name = "lumi.weather",
     .z2s_device_uid = 2900,
@@ -5301,6 +5376,11 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_RELAY_1,
 	  .z2s_device_endpoints_count = 1},
 
+  {	.manufacturer_name = "SONOFF", .model_name = "MINI-ZBD",
+    .z2s_device_uid = 16525,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_RELAY_1,
+	  .z2s_device_endpoints_count = 1},
+
   {	.manufacturer_name = "SONOFF", .model_name = "MINI-ZB2GS",
     .z2s_device_uid = 16550,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_RELAY_1,
@@ -5425,7 +5505,7 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 
   {	.manufacturer_name = "_TZE200_ybsqljjg", .model_name = "TS0601",
     .z2s_device_uid = 17105,
-	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME167,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME168,
 	  .z2s_device_endpoints_count = 1},
 
   {	.manufacturer_name = "_TZE200_4utwozi2", .model_name = "TS0601",
@@ -5441,6 +5521,21 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
   {	.manufacturer_name = "_TZE284_c6wv4xyo", .model_name = "TS0601",
     .z2s_device_uid = 17120,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME167,
+	  .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "_TZE200_cxakecfo", .model_name = "TS0601",
+    .z2s_device_uid = 17125,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME168,
+	  .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "_TZE200_4aijvczq", .model_name = "TS0601",
+    .z2s_device_uid = 17130,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME168,
+	  .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "_TZE200_r5ksy7qo", .model_name = "TS0601",
+    .z2s_device_uid = 17135,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TS0601_TRV_ME168,
 	  .z2s_device_endpoints_count = 1},
 
   {	.manufacturer_name = "_TZE200_9xfjixap", .model_name = "TS0601",
@@ -6510,6 +6605,21 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_IR_REMOTE_CONTROL,
 	  .z2s_device_endpoints_count = 1},
 
+  {	.manufacturer_name = "_TZ3290_nba3knpsarkawgnt", .model_name = "TS1201",
+    .z2s_device_uid = 25005,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_IR_REMOTE_CONTROL,
+	  .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "_TZ3290_yyax9ajf", .model_name = "TS1201",
+    .z2s_device_uid = 25025,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_MOES_IR_REMOTE_CONTROL,
+	  .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "HOBEIAN", .model_name = "ZG-IR01",
+    .z2s_device_uid = 25050,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_DP_IR_REMOTE_CONTROL,
+	  .z2s_device_endpoints_count = 1},
+
   {	.manufacturer_name = "_TZ3210_ol1uhvza", .model_name = "TS130F",
     .z2s_device_uid = 25100,
 	  .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_WINDOW_COVERING_SINGLE,
@@ -7025,6 +7135,11 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
 
   { .manufacturer_name = "_TZE204_8fffc3kb", .model_name = "TS0601",
     .z2s_device_uid = 31300,
+    .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_RGBWCT_LED_EF00,
+    .z2s_device_endpoints_count = 1},
+
+  { .manufacturer_name = "_TZE28C1000000_gt5al3bl", .model_name = "TS0601",
+    .z2s_device_uid = 31350,
     .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_RGBWCT_LED_EF00,
     .z2s_device_endpoints_count = 1},
 
@@ -7558,6 +7673,11 @@ inline const z2s_device_entity_t Z2S_DEVICES_LIST[] PROGMEM = {
     .z2s_device_uid = 38300,
     .z2s_device_desc_id = Z2S_DEVICE_DESC_TUYA_TH_SENSOR_NTC_PROBE,
     .z2s_device_endpoints_count = 1},
+
+  {	.manufacturer_name = "AwoX", .model_name = "ERCU_3groups_Zm",
+    .z2s_device_uid = 38400,
+	  .z2s_device_desc_id = Z2S_DEVICE_DESC_EGLO_CONNECT2_REMOTE,
+	  .z2s_device_endpoints_count = 1},
 
   
 //DEVICES_END

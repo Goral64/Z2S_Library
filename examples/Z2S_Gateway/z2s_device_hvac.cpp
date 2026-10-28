@@ -34,6 +34,12 @@ uint8_t getZ2SDeviceHvacCmdSet(uint32_t model_id, uint8_t Zb_device_id) {
     } break;
 
 
+    case Z2S_DEVICE_DESC_TS0601_TRV_ME168: {
+
+      return me167_no_pi_cmd_set;
+    } break;
+
+
     case Z2S_DEVICE_DESC_TS0601_TRV_BECA: {
       
       return beca_cmd_set; 
@@ -335,11 +341,8 @@ void initZ2SDeviceHvacExt(
     Supla_Z2S_TRVInterface->setZ2SChannel(channel_index, _z2s_channel);
 
     Supla_Z2S_HvacBase = new Supla::Control::HvacBaseEE(
-      Supla_Z2S_TRVInterface);
-            
-    Supla_Z2S_HvacBase->getChannel()->setChannelNumber(
-      _z2s_channel->Supla_channel);
-
+      Supla_Z2S_TRVInterface, nullptr, _z2s_channel->Supla_channel);
+    
     Supla_Z2S_HvacBase->setMainThermometerChannelNo(
       _z2s_channel->Supla_secondary_channel);
 

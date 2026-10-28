@@ -785,6 +785,8 @@ void setup() {
 
         Z2S_initSuplaActions();
         Z2S_initPushoverMessages();
+        irCodesStorage.loadIndexTable();
+
       }
     }
     else {
@@ -1762,6 +1764,17 @@ void loop() {
 
                   zbGateway.sendAddGroupRequestCmd(joined_device, 21658, true);
                   zbGateway.sendAddGroupRequestCmd(joined_device, 21658, false);
+                } break;
+
+
+                case Z2S_DEVICE_DESC_EGLO_CONNECT2_REMOTE: {
+
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32777, true);
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32777, false);
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32778, true);
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32778, false);
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32779, true);
+                  zbGateway.sendAddGroupRequestCmd(joined_device, 32779, false);
                 } break;
 
     
